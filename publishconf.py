@@ -6,16 +6,39 @@ import sys
 sys.path.append(os.curdir)
 from pelicanconf import *
 
-# If your site is available via HTTPS, make sure SITEURL begins with https://
-SITEURL = 'https://npezzotti.github.io'
+# Basic Settings
+USE_FOLDER_AS_CATEGORY = True
+DELETE_OUTPUT_DIRECTORY = True
+DEFAULT_CATEGORY = 'misc'
+SITENAME = 'Nathan\'s Tech Blog'
+SITEURL = 'npezzotti.github.io'
 RELATIVE_URLS = False
+OUTPUT_PATH = 'output/'
+PATH = 'content'
 
+# URL Settings
+
+# Time and Date
 FEED_ALL_ATOM = 'feeds/all.atom.xml'
 CATEGORY_FEED_ATOM = 'feeds/{slug}.atom.xml'
 
+# Template Pages
+
+# Metadata
+
+# Feed Settings
+
+# Pagination
 DELETE_OUTPUT_DIRECTORY = True
+DEFAULT_PAGINATION = 10
 
-# Following items are often useful when publishing
+# Translation
 
-#DISQUS_SITENAME = ""
-#GOOGLE_ANALYTICS = ""
+# Ordering Content
+
+# Themes
+THEME = 'themes/npezzotti-theme'
+SOCIAL = (
+    ('github', 'https://github.com/npezzotti'),
+    ('email', 'npezzotti80@gmail.com'),
+)

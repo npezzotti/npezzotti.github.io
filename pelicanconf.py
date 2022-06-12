@@ -1,31 +1,38 @@
+# Basic Settings
+USE_FOLDER_AS_CATEGORY = True
+DELETE_OUTPUT_DIRECTORY = True
+DEFAULT_CATEGORY = 'misc'
 AUTHOR = 'Nathan Pezzotti'
-SITENAME = "Nathan's Tech Blog"
-SITEURL = ''
+RELATIVE_URLS = True
+OUTPUT_PATH = 'output/'
+PATH = 'content'
+SITENAME = "Nathan's Blog"
+SITEURL = 'npezzotti.github.io'
+PORT = 8000
+BIND = '127.0.0.1'
 
 PATH = 'content'
-
 TIMEZONE = 'America/New_York'
-
 DEFAULT_LANG = 'en'
 
-# Feed generation is usually not desired when developing
+# Feed Settings
 FEED_ALL_ATOM = None
 CATEGORY_FEED_ATOM = None
 TRANSLATION_FEED_ATOM = None
 AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
-# Blogroll
-LINKS = (('Pelican', 'https://getpelican.com/'),
-         ('Python.org', 'https://www.python.org/'),
-         ('Jinja2', 'https://palletsprojects.com/p/jinja/'),
-         ('You can modify those links in your config file', '#'),)
-
-# Social widget
-SOCIAL = (('You can add links in your config file', '#'),
-          ('Another social link', '#'),)
+SUMMARY_MAX_LENGTH = 10
 
 DEFAULT_PAGINATION = 10
 
-# Uncomment following line if you want document-relative URLs when developing
-#RELATIVE_URLS = True
+# Translation
+
+# Ordering Content
+
+# Themes
+THEME = 'themes/npezzotti-theme'
+SOCIAL = (
+    ('github', 'https://github.com/npezzotti'),
+    ('email', 'npezzotti80@gmail.com'),
+)
