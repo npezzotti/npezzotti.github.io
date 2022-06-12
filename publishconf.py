@@ -7,7 +7,7 @@ sys.path.append(os.curdir)
 from pelicanconf import *
 
 # Basic Settings
-USE_FOLDER_AS_CATEGORY = True
+USE_FOLDER_AS_CATEGORY = False
 DELETE_OUTPUT_DIRECTORY = True
 DEFAULT_CATEGORY = 'misc'
 SITENAME = 'Nathan\'s Tech Blog'
