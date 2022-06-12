@@ -1,5 +1,5 @@
 # Basic Settings
-USE_FOLDER_AS_CATEGORY = False
+USE_FOLDER_AS_CATEGORY = True
 DELETE_OUTPUT_DIRECTORY = True
 DEFAULT_CATEGORY = 'misc'
 AUTHOR = 'Nathan Pezzotti'
