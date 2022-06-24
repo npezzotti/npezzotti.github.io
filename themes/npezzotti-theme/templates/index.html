@@ -1,28 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
 <section id="content">
-{% block content_title %}
-<h2>All articles</h2>
-{% endblock %}
-
-<ol id="post-list">
-{% for article in articles_page.object_list %}
-        <li><article class="hentry">
-                <header> <h2 class="entry-title"><a href="{{ SITEURL }}/{{ article.url }}" rel="bookmark" title="Permalink to {{ article.title|striptags }}">{{ article.title }}</a></h2> </header>
-                <footer class="post-info">
-                    <time class="published" datetime="{{ article.date.isoformat() }}"> {{ article.locale_date }} </time>
-                    <address class="vcard author">By
-                    {% for author in article.authors %}
-                        <a class="url fn" href="{{ SITEURL }}/{{ author.url }}">{{ author }}</a>
-                    {% endfor %}
-                    </address>
-                </footer><!-- /.post-info -->
-                <div class="entry-content"> {{ article.summary }} </div><!-- /.entry-content -->
-        </article></li>
-{% endfor %}
-</ol><!-- /#posts-list -->
-{% if articles_page.has_other_pages() %}
-    {% include 'pagination.html' %}
-{% endif %}
+    {% block content_title %}
+    <figure>
+        <blockquote class="blockquote">
+            <p class="text-center">Articles on Python, Linux, other technology-related things.</p>
+        </blockquote>
+    </figure>
+    <h4 class="mt-5">Recent posts</h4>
+    {% endblock %}
+    <div id="post-list" class="container-fluid mt-3">
+        {% for article in articles_page.object_list %}
+        <header>
+            <h5 class="entry-title"><a class="text-reset" href="{{ SITEURL }}/{{ article.url }}" rel="bookmark"
+                    title="{{ article.title|striptags }}">{{ article.title }}</a></h2>
+        </header>
+        <div class="lead">
+            <time class="published" datetime="{{ article.date.isoformat() }}"> {{ article.locale_date }} </time>
+        </div><!-- /.post-info -->
+        <div class="entry-content"> {{ article.summary }} </div><!-- /.entry-content -->
+        <ul class="list-inline">
+            {% for tag in article.tags %}
+            <li class="list-inline-item"><a class="text-reset" href="{{ SITEURL }}/{{ tag.url }}">#{{ tag.name }}</a></li>
+            {% endfor %}
+            {% endfor %}
+            </ol><!-- /#posts-list -->
+            {% if articles_page.has_other_pages() %}
+            {% include 'pagination.html' %}
+            {% endif %}
+        </ul>
 </section><!-- /#content -->
 {% endblock content %}

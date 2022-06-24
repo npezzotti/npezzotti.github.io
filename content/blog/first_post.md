@@ -1,5 +1,7 @@
 Title: My First Post
 Date: 2022-06-10
+Tags: pelican, learning
+Author: Nathan Pezzotti
 Category: blog
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi eros nulla, tempor a efficitur a, fermentum id nisi. Cras eget risus id magna ultrices facilisis. Mauris vulputate commodo scelerisque. Sed scelerisque, arcu quis rutrum cursus, sem mi eleifend ante, in bibendum ex ligula a ligula. Donec fringilla volutpat finibus. Vivamus vitae vestibulum ligula. Mauris finibus odio eu vulputate placerat. Nullam gravida, nunc quis sollicitudin accumsan, elit augue sodales mi, in gravida elit lectus et ante. Curabitur ac ex hendrerit, congue dui a, venenatis nisl. Vestibulum efficitur quam eget nunc molestie, a dignissim arcu venenatis. Aenean arcu quam, ornare vitae dictum ut, semper vel quam.
