@@ -5,7 +5,7 @@ Category: devops
 Tags: terraform, aws, devops
 Image: nginx-logo.png
 
-In this tutprial, we will use Terraform to create a VPC with a single public subnet in which we will launch an EC2 instance running Nginx.
+In this tutorial, we will use Terraform to create a VPC with a single public subnet in which we will launch an EC2 instance running Nginx.
 
 By the end of this, you will have learned the following:
 
@@ -94,7 +94,7 @@ variable "project-name" {
 
 variable "tf-nginx-az" {
   type        = string
-  description = "Availability zone"
+  description = "AZ for NginxServer"
   default     = "us-east-1a"
 }
 ```
@@ -105,7 +105,6 @@ Add the following code to the `main.tf` file:
 resource "aws_vpc" "tf-nginx-vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
-  enable_dns_support   = true
 
   tags = {
     Name = "${var.project-name}-vpc"
