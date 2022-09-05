@@ -3,10 +3,12 @@
 {% block title %}{{ SITENAME }} - Categories{% endblock %}
 
 {% block content %}
-<h3>Posts by Category - {{ SITENAME }}</h3>
-<ul class="list-group list-group-flush">
-    {% for category, articles in categories|sort %}
-    <li class="list-group-item"><a class="text-reset" href="{{ SITEURL }}/{{ category.url }}">{{ category }}</a> ({{ articles|count }})</li>
-    {% endfor %}
-</ul>
+<div class="container">
+    <h3>{{ SITENAME }}- Posts by Category</h3>
+    <ul class="list-group">
+        {% for category, articles in categories|sort %}
+        <li class="list-group-item list-group-item-action"><a class="text-reset text-decoration-none" href="{{ SITEURL }}/{{ category.url }}">{{ category }}</a> ({{ articles|count }})</li>
+        {% endfor %}
+    </ul>
+</div>
 {% endblock %}

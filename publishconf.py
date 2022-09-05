@@ -44,8 +44,9 @@ ARTICLE_ORDER_BY = 'date'
 # Themes
 THEME = 'themes/npezzotti-theme'
 SOCIAL = (
-    ('github', 'https://github.com/npezzotti'),
+    ('github', 'https://www.github.com/npezzotti'),
     ('email', 'npezzotti80@gmail.com'),
+    ('linkedin', 'https://www.linkedin.com/in/nathan-pezzotti/')
 )
 MENUITEMS = (('Home', '/'), ('Posts', '/posts'),)
-GITHUB_URL = "https://github.com/npezzotti"
+GITHUB_URL = "https://www.github.com/npezzotti"
