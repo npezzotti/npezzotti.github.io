@@ -5,8 +5,7 @@ Category: networking
 Tags: networking, linux
 Image: https.jpg
 
-## Overview
-This tutorial demonstrates how to set up an HTTPS site on an Apache using a custom root CA. It is  the purpose of exploring how HTTPS works.
+This tutorial demonstrates how to set up an HTTPS site on an Apache using a custom root CA for the purpose of exploring the workings of HTTPS.
 
 For this project, I used Ubuntu 20.04 and ran the command as a non-root user with sudo privileges.
 
