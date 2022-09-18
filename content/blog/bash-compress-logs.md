@@ -37,7 +37,7 @@ DIR=$1
 FILE_SIZE="10M"
 PATTERN=$2
 
-FILES=$(find ${DIR} -type f -size ${FILE_SIZE} -regex ${PATTERN:-".*/.*.log"})
+FILES=$(find ${DIR} -type f -size ${FILE_SIZE} -regex ${PATTERN:-.*\/.*\.log})
 
 for file in ${FILES[@]}
 do
@@ -65,7 +65,7 @@ done
 - *Line 26:* set a `DIR` variable as the first argument provided to the script. This is the directory where the script will look for files.
 - *Line 27:* set a `FILE_SIZE` variable to 10 megabytes. The script will only compress files of that size or greater. This is a good size at which to rotate a file, but it can be adjusted if needed.
 - *Line 28:* set a `PATTERN` variable as the second argument provided to the script. This is a shell pattern used to match the target files.
-- *Line 30:* use the `find` utility to collect all files and save it as an array. The `$DIR` variable is provided as the first argument , the starting directory from which files will be recursively searched. The `-type f` argument indicates that the command should only look for files. `-size` constrains the command to only return files which a size greater than `$FILE_SIZE` (`10M`). The `-regex` argument takes a regex to further filter which files are returned. This uses a feature of brace expansion which sets a default value (`.*/.*.log`) assuming the user did not provide a second argument (and `$PATTERN` is empty). The full command is enclosed in parenthesis and a leading `$`, also know as command substitution, which will allow the output of the command to be saved in the variable.
+- *Line 30:* use the `find` utility to collect all files and save it as an array. The `$DIR` variable is provided as the first argument , the starting directory from which files will be recursively searched. The `-type f` argument indicates that the command should only look for files. `-size` constrains the command to only return files which a size greater than `$FILE_SIZE` (`10M`). The `-regex` argument takes a regex to further filter which files are returned. This uses a feature of brace expansion which sets a default value (`.*\/.*\.log`) assuming the user did not provide a second argument (and `$PATTERN` is empty). The full command is enclosed in parenthesis and a leading `$`, also know as command substitution, which will allow the output of the command to be saved in the variable.
 - *Lines 32-44:* this is a bash for loop, used to iterate over the `$FILES` array (all the files returned by the find command). `${<ARRAY>[@]}` returns all values in the array.
 - *Line 34:* print a log with the current date and time and which file is going to be compressed.
 - *Lines 36-40:* this is a while loop in which we determine the name of the compressed file. The file name should be `<FILE_NAME>.<NUM_TIMES_COMPRESSED>.gz`. Assuming the file has already been compressed, we want the `<NUM_TIMES_COMPRESSED>` to increment. To do this we set an `INDEX` shell variable to 1 and add a  while loop condition which checks to see if a file exists with that index (i.e `<FILE_NAME>.1.gz`). If it does, the value of `INDEX` is incremented and the while condition is run again. This code will continue to run until a file with that name does not exist.
