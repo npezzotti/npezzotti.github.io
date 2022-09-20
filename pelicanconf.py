@@ -13,7 +13,10 @@ SITENAME = 'Nathan\'s Blog'
 SITEURL = 'https://npezzotti.github.io'
 PORT = 8000
 BIND = '127.0.0.1'
-STATIC_PATHS = ['images']
+STATIC_PATHS = ['images', 'extra/favicon.ico']
+EXTRA_PATH_METADATA = {
+    'extra/favicon.ico': {'path': 'favicon.ico'}
+}
 
 PATH = 'content'
 TIMEZONE = 'America/New_York'

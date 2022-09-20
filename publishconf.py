@@ -18,7 +18,10 @@ RELATIVE_URLS = False
 OUTPUT_PATH = 'output/'
 PATH = 'content'
 ARTICLE_PATHS = ['blog']
-STATIC_PATHS = ['images']
+STATIC_PATHS = ['images', 'extra/favicon.ico']
+EXTRA_PATH_METADATA = {
+    'extra/favicon.ico': {'path': 'favicon.ico'}
+}
 
 # URL Settings
 
