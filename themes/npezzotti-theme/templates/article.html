@@ -46,22 +46,24 @@
         {% endfor %}
     </address>
     {% endif %}
-    {% if article.category %}
-    <div>
-        Category: <a class="text-reset" href="{{ SITEURL }}/{{ article.category.url }}">{{ article.category }}</a>
-    </div>
-    {% endif %}
-    {% if article.tags %}
-    <div class="tags">
-        Tags:
-        {% for tag in article.tags %}
-            <a class="text-reset" href="{{ SITEURL }}/{{ tag.url }}">#{{ tag }}</a>
-        {% endfor %}
-    </div>
-    {% endif %}
   </div><!-- /.post-info -->
+  </br>
   <div class="entry-content">
     {{ article.content }}
   </div><!-- /.entry-content -->
+  </br>
+  {% if article.category %}
+  <div>
+      Category: <a class="text-reset" href="{{ SITEURL }}/{{ article.category.url }}">{{ article.category }}</a>
+  </div>
+  {% endif %}
+  {% if article.tags %}
+  <div class="tags">
+      Tags:
+      {% for tag in article.tags %}
+          <a class="text-reset" href="{{ SITEURL }}/{{ tag.url }}">#{{ tag }}</a>
+      {% endfor %}
+  </div>
+  {% endif %}
 </section>
 {% endblock %}
