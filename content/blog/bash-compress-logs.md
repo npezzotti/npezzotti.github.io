@@ -7,7 +7,7 @@ Image: linux.jpg
 
 This post shows an example of a bash script which compresses all files matching a pattern in a given directory. It can be used as a cron job or one-off to rotate growing log files on a server. The `logrotate` program is a better candidate for this in real world situations, but this was a fun exercise in scripting and could be useful in some scenarios.
 
-```
+```shell
 #!/bin/bash
 
 #################################################
@@ -74,10 +74,15 @@ done
 
 To test this script, you can create a logs directory and use `dd` to create some sample files over 10 megabytes in size:
 ```
-$ mkdir -p logs/more-logs
 $ dd if=/dev/zero of=logs/my-app.log  bs=1024  count=10240
-$ touch my-app.log.1.gz
+10240+0 records in
+10240+0 records out
+10485760 bytes (10 MB, 10 MiB) copied, 0.0279485 s, 375 MB/s
+$ touch logs/my-app.log.1.gz
 $ dd if=/dev/zero of=logs/more-logs/my-app.log  bs=1024  count=10240
+10240+0 records in
+10240+0 records out
+10485760 bytes (10 MB, 10 MiB) copied, 0.0415605 s, 252 MB/s
 ```
 ```
 $ sudo ./rotate.sh logs/ .*/my-app.log
