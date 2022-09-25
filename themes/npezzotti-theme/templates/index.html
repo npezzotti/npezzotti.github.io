@@ -8,20 +8,20 @@
         </blockquote>
     </figure>
     {% endblock %}
-    <div class="container">
+    <div class="container w-75">
         <h4 class="mt-5">Recent posts</h4>
         {% for article in dates_page.object_list %}
         <div class="card mb-3">
             <div class="row g-0">
                 <div class="col-md-4">
-                    <img src="{{ SITEURL }}/images/{{ article.image }}" class="img-thumbnail rounded-start" alt="...">
+                    <img src="{{ SITEURL }}/images/{{ article.image }}" class="img-fluid rounded-start" alt="...">
                 </div>
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title">
                             <a class="text-reset" href="{{ SITEURL }}/{{ article.url }}" rel="bookmark" title="{{ article.title|striptags }}">{{ article.title }}</a>
                         </h5>
-                        <p class="card-text"><time class="published" datetime="{{ article.date.isoformat() }}"> {{ article.locale_date }}</time></p>
+                        <p class="card-text"><time class="fw-light" datetime="{{ article.date.isoformat() }}"> {{ article.locale_date }}</time></p>
                         <p class="card-text"> {{ article.summary }}</p>
                         <ul class="list-inline">
                             {% for tag in article.tags %}
