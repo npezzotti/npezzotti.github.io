@@ -1,11 +1,11 @@
 .highlight {
     padding: 1em;
     border-radius: 10px;
-    background: black;
-    color: rgba(102, 255, 0, 0.918);
+    background: rgb(66, 66, 66);
+    color: rgb(83, 196, 52);
     border: solid;
     border-width: medium;
-    border-color: rgba(255, 255, 255, 0.604);
+    border-color: rgb(191, 191, 191);
     margin-top: .3em;
     margin-bottom: .3em;
 }
