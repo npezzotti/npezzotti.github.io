@@ -3,7 +3,7 @@ Date: 2022-11-13
 Author: Nathan Pezzotti
 Category: networking
 Tags: linux, networking
-Image: prompts.jpg
+Image: curl-logo.svg
 
 This is a cheatsheet for useful options for the `curl` utility when using HTTP. These examples use `httpbin.org`, which provides a highly useful HTTP API for testing.
 
