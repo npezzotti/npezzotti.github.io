@@ -7,4 +7,4 @@
 *.py[cod]
 output
 .vscode
-.venv
+.env
