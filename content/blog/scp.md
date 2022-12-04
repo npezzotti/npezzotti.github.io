@@ -23,11 +23,11 @@ $ scp -i .ssh/nathan-lab-key -r test ubuntu@44.203.149.231:test
 ```
 The default authentication is password authentication and requires the SSH daemon permit that with the `PasswordAuthentication yes` setting. `scp` also supports oth ssh authentication mechanisms, such as SSH keys. You can use the `-i` flag to provide the path to your private key to authenticate:
 ```
-scp -i private-key.pem /path/to/local-file <REMOTE_USER>@<REMOTE_HOST>:/path/to/remote-copy```
+scp -i private-key.pem /path/to/local-file <REMOTE_USER>@<REMOTE_HOST>:/path/to/remote-copy
 ```
 If the remote server's SSH daemon is listening on a a port other than `22`, provide the `-P` flag:
 ```
-scp -P 2200 -i private-key.pem /path/to/local-file <REMOTE_USER>@<REMOTE_HOST>:/path/to/remote-copy```
+scp -P 2200 -i private-key.pem /path/to/local-file <REMOTE_USER>@<REMOTE_HOST>:/path/to/remote-copy
 ```
 scp also supports copying files between two remote hosts by adding additional of connection details before either the source or destination path:
 ```
