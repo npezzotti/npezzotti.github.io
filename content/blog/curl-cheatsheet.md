@@ -7,6 +7,10 @@ Image: curl-logo.svg
 
 This is a cheatsheet for useful options for the `curl` utility when using HTTP. These examples use `httpbin.org`, which provides a highly useful HTTP API for testing.
 
+## Basic Usage
+```
+curl <OPTIONS> <URLS>
+```
 **Specify request method with `--request`(`-X`)**
 
 This option is generally not neeeded as `curl` is able to infer the method. See [here](https://everything.curl.dev/http#http-methods) for more information
