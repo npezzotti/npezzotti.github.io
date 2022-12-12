@@ -1,7 +1,7 @@
-Title: How to use SCP utility in Linux
+Title: How to use scp Utility in Linux
 Date: 2022-12-4
 Author: Nathan Pezzotti
-Category: networking
+Category: linux
 Tags: linux, networking
 Image: scp.jpg
 
