@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - Curl Cheatsheet</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="linux" />
+    <meta name="tags" content="networking" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./curl-cheatsheet.html" rel="bookmark"
+         title="Permalink to Curl Cheatsheet">Curl Cheatsheet</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-11-13T00:00:00-05:00">
+      Sun 13 November 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>This is a cheatsheet for useful options for the <code>curl</code> utility when using HTTP. These examples use <code>httpbin.org</code>, which provides a highly useful HTTP API for testing.</p>
+<h2>Basic Usage</h2>
+<div class="highlight"><pre><span></span><code>curl &lt;OPTIONS&gt; &lt;URLS&gt;
+</code></pre></div>
+
+<p><strong>Specify request method with <code>--request</code>(<code>-X</code>)</strong></p>
+<p>This option is generally not neeeded as <code>curl</code> is able to infer the method. See <a href="https://everything.curl.dev/http#http-methods">here</a> for more information</p>
+<p>"GET is default, using -d or -F makes it a POST, -I generates a HEAD and -T sends a PUT."</p>
+<p><code>GET</code> request:</p>
+<div class="highlight"><pre><span></span><code>$ curl <span class="s2">&quot;http://httpbin.org/get&quot;</span>                 
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;*/*&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-637197f3-3112ff28701cd7ee7e151ba2&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;http://httpbin.org/get&quot;</span>
+<span class="o">}</span>
+</code></pre></div>
+
+<p>To attach body data to the request (i.e make it a <code>POST</code> request), use the <code>--data</code>(<code>-d</code>) or <code>--form</code>(<code>-F</code>) flags</p>
+<div class="highlight"><pre><span></span><code>$ curl <span class="s2">&quot;https://httpbin.org/post&quot;</span> -H <span class="s2">&quot;accept: application/json&quot;</span> -d <span class="s2">&quot;key1=value1&amp;key2=value2&quot;</span>
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;data&quot;</span>: <span class="s2">&quot;&quot;</span>, 
+  <span class="s2">&quot;files&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;form&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;key1&quot;</span>: <span class="s2">&quot;value1&quot;</span>, 
+    <span class="s2">&quot;key2&quot;</span>: <span class="s2">&quot;value2&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;application/json&quot;</span>, 
+    <span class="s2">&quot;Content-Length&quot;</span>: <span class="s2">&quot;23&quot;</span>, 
+    <span class="s2">&quot;Content-Type&quot;</span>: <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-63719b5a-287c58eb116f3ed37e306811&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;json&quot;</span>: null, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;https://httpbin.org/post&quot;</span>
+<span class="o">}</span>
+</code></pre></div>
+
+<p>You can also load data from a file using the <code>@</code> symbol:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">echo</span> <span class="s2">&quot;key1=value1&amp;key2=value2&quot;</span> &gt; data.txt  
+$ curl <span class="s2">&quot;https://httpbin.org/post&quot;</span> -H <span class="s2">&quot;accept: application/json&quot;</span> -d @data.txt                
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;data&quot;</span>: <span class="s2">&quot;&quot;</span>, 
+  <span class="s2">&quot;files&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;form&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;key1&quot;</span>: <span class="s2">&quot;value1&quot;</span>, 
+    <span class="s2">&quot;key2&quot;</span>: <span class="s2">&quot;value2&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;application/json&quot;</span>, 
+    <span class="s2">&quot;Content-Length&quot;</span>: <span class="s2">&quot;23&quot;</span>, 
+    <span class="s2">&quot;Content-Type&quot;</span>: <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-63719ba5-2abdd96f3c59f87218e9ac2e&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;json&quot;</span>: null, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;https://httpbin.org/post&quot;</span>
+<span class="o">}</span>
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code>$ curl <span class="s2">&quot;https://httpbin.org/post&quot;</span> -H <span class="s2">&quot;accept: application/json&quot;</span> -F <span class="s2">&quot;key1=value1&quot;</span> -F <span class="s2">&quot;key2=value2&quot;</span>                  
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;data&quot;</span>: <span class="s2">&quot;&quot;</span>, 
+  <span class="s2">&quot;files&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;form&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;key1&quot;</span>: <span class="s2">&quot;value1&quot;</span>, 
+    <span class="s2">&quot;key2&quot;</span>: <span class="s2">&quot;value2&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;application/json&quot;</span>, 
+    <span class="s2">&quot;Content-Length&quot;</span>: <span class="s2">&quot;244&quot;</span>, 
+    <span class="s2">&quot;Content-Type&quot;</span>: <span class="s2">&quot;multipart/form-data; boundary=------------------------b8fbb17b63cb9115&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-63719cb9-405721fd18b9b9f42563c813&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;json&quot;</span>: null, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;https://httpbin.org/post&quot;</span>
+<span class="o">}</span>
+</code></pre></div>
+
+<p>By default, the <code>-d</code> option sends a <code>Content-Type: application/x-www-form-urlencoded</code> header. When you need to send JSON, use either <code>-d</code> with JSON data (ie. <code>'{"test": "json"}'</code>) and the <code>Content-Type: application/json</code> header, or the shortcut <code>--json</code>.</p>
+<div class="highlight"><pre><span></span><code>$ curl <span class="s2">&quot;https://httpbin.org/post&quot;</span> -H <span class="s2">&quot;accept: application/json&quot;</span> -H <span class="s2">&quot;Content-Type: application/json&quot;</span> -d <span class="s1">&#39;{&quot;key&quot;: &quot;value&quot;}&#39;</span>
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;data&quot;</span>: <span class="s2">&quot;{\&quot;key\&quot;: \&quot;value\&quot;}&quot;</span>, 
+  <span class="s2">&quot;files&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;form&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;application/json&quot;</span>, 
+    <span class="s2">&quot;Content-Length&quot;</span>: <span class="s2">&quot;16&quot;</span>, 
+    <span class="s2">&quot;Content-Type&quot;</span>: <span class="s2">&quot;application/json&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-63719c16-616bf12d7fcc50480c65b420&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;json&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;key&quot;</span>: <span class="s2">&quot;value&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;https://httpbin.org/post&quot;</span>
+<span class="o">}</span>
+</code></pre></div>
+
+<p><strong>Retrieve only the headers with <code>--head</code> (<code>-I</code>)</strong></p>
+<p>This send an HTTP <code>HEAD</code> request.</p>
+<div class="highlight"><pre><span></span><code>$ curl -I <span class="s2">&quot;https://httpbin.org/get&quot;</span>
+HTTP/2 <span class="m">200</span> 
+date: Sun, <span class="m">13</span> Nov <span class="m">2022</span> <span class="m">23</span>:23:44 GMT
+content-type: application/json
+content-length: <span class="m">257</span>
+server: gunicorn/19.9.0
+access-control-allow-origin: *
+access-control-allow-credentials: <span class="nb">true</span>
+</code></pre></div>
+
+<p><strong>View verbose output with <code>--verbose</code>(<code>-v</code>)</strong></p>
+<p>This is useful for inspecting connetion and TLS details.</p>
+<div class="highlight"><pre><span></span><code>$ curl -v <span class="s2">&quot;https://httpbin.org/get&quot;</span>
+*   Trying <span class="m">35</span>.168.106.184:443...
+* Connected to httpbin.org <span class="o">(</span><span class="m">35</span>.168.106.184<span class="o">)</span> port <span class="m">443</span> <span class="o">(</span><span class="c1">#0)</span>
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully <span class="nb">set</span> certificate verify locations:
+*  CAfile: /etc/ssl/cert.pem
+*  CApath: none
+* <span class="o">(</span><span class="m">304</span><span class="o">)</span> <span class="o">(</span>OUT<span class="o">)</span>, TLS handshake, Client hello <span class="o">(</span><span class="m">1</span><span class="o">)</span>:
+* <span class="o">(</span><span class="m">304</span><span class="o">)</span> <span class="o">(</span>IN<span class="o">)</span>, TLS handshake, Server hello <span class="o">(</span><span class="m">2</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>IN<span class="o">)</span>, TLS handshake, Certificate <span class="o">(</span><span class="m">11</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>IN<span class="o">)</span>, TLS handshake, Server key exchange <span class="o">(</span><span class="m">12</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>IN<span class="o">)</span>, TLS handshake, Server finished <span class="o">(</span><span class="m">14</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>OUT<span class="o">)</span>, TLS handshake, Client key exchange <span class="o">(</span><span class="m">16</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>OUT<span class="o">)</span>, TLS change cipher, Change cipher spec <span class="o">(</span><span class="m">1</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>OUT<span class="o">)</span>, TLS handshake, Finished <span class="o">(</span><span class="m">20</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>IN<span class="o">)</span>, TLS change cipher, Change cipher spec <span class="o">(</span><span class="m">1</span><span class="o">)</span>:
+* TLSv1.2 <span class="o">(</span>IN<span class="o">)</span>, TLS handshake, Finished <span class="o">(</span><span class="m">20</span><span class="o">)</span>:
+* SSL connection using TLSv1.2 / ECDHE-RSA-AES128-GCM-SHA256
+* ALPN, server accepted to use h2
+* Server certificate:
+*  subject: <span class="nv">CN</span><span class="o">=</span>httpbin.org
+*  start date: Oct <span class="m">21</span> <span class="m">00</span>:00:00 <span class="m">2022</span> GMT
+*  expire date: Nov <span class="m">19</span> <span class="m">23</span>:59:59 <span class="m">2023</span> GMT
+*  subjectAltName: host <span class="s2">&quot;httpbin.org&quot;</span> matched cert<span class="err">&#39;</span>s <span class="s2">&quot;httpbin.org&quot;</span>
+*  issuer: <span class="nv">C</span><span class="o">=</span>US<span class="p">;</span> <span class="nv">O</span><span class="o">=</span>Amazon<span class="p">;</span> <span class="nv">OU</span><span class="o">=</span>Server CA 1B<span class="p">;</span> <span class="nv">CN</span><span class="o">=</span>Amazon
+*  SSL certificate verify ok.
+* Using HTTP2, server supports multiplexing
+* Connection state changed <span class="o">(</span>HTTP/2 confirmed<span class="o">)</span>
+* Copying HTTP/2 data <span class="k">in</span> stream buffer to connection buffer after upgrade: <span class="nv">len</span><span class="o">=</span><span class="m">0</span>
+* Using Stream ID: <span class="m">1</span> <span class="o">(</span>easy handle 0x151812c00<span class="o">)</span>
+&gt; GET /get HTTP/2
+&gt; Host: httpbin.org
+&gt; user-agent: curl/7.79.1
+&gt; accept: */*
+&gt; 
+* Connection state changed <span class="o">(</span><span class="nv">MAX_CONCURRENT_STREAMS</span> <span class="o">==</span> <span class="m">128</span><span class="o">)</span>!
+&lt; HTTP/2 <span class="m">200</span> 
+&lt; date: Sun, <span class="m">13</span> Nov <span class="m">2022</span> <span class="m">23</span>:28:32 GMT
+&lt; content-type: application/json
+&lt; content-length: <span class="m">257</span>
+&lt; server: gunicorn/19.9.0
+&lt; access-control-allow-origin: *
+&lt; access-control-allow-credentials: <span class="nb">true</span>
+&lt; 
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;*/*&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-63717da0-6ce7a88c2dbfe7f61534fcb0&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;https://httpbin.org/get&quot;</span>
+<span class="o">}</span>
+* Connection <span class="c1">#0 to host httpbin.org left intact</span>
+</code></pre></div>
+
+<p><strong>HTTP basic authentication with <code>--user</code> (<code>-u</code>)</strong></p>
+<p>The username and password are specified in <code>&lt;USERNAME&gt;:&lt;PASSWORD&gt;</code> format.</p>
+<div class="highlight"><pre><span></span><code>$ curl -I --user test-user:password <span class="s2">&quot;https://httpbin.org/basic-auth/test-user/password&quot;</span> -H <span class="s2">&quot;accept: application/json&quot;</span>
+HTTP/2 <span class="m">200</span> 
+date: Sun, <span class="m">13</span> Nov <span class="m">2022</span> <span class="m">23</span>:54:09 GMT
+content-type: application/json
+content-length: <span class="m">49</span>
+server: gunicorn/19.9.0
+access-control-allow-origin: *
+access-control-allow-credentials: <span class="nb">true</span>
+</code></pre></div>
+
+<p><strong>Follow redirects with the <code>-L</code> flag</strong></p>
+<div class="highlight"><pre><span></span><code>$ curl -L -I https://httpbin.org/absolute-redirect/1
+HTTP/2 <span class="m">302</span> 
+date: Sun, <span class="m">13</span> Nov <span class="m">2022</span> <span class="m">23</span>:42:33 GMT
+content-type: text/html<span class="p">;</span> <span class="nv">charset</span><span class="o">=</span>utf-8
+content-length: <span class="m">251</span>
+location: http://httpbin.org/get
+server: gunicorn/19.9.0
+access-control-allow-origin: *
+access-control-allow-credentials: <span class="nb">true</span>
+
+HTTP/1.1 <span class="m">200</span> OK
+Date: Sun, <span class="m">13</span> Nov <span class="m">2022</span> <span class="m">23</span>:42:33 GMT
+Content-Type: application/json
+Content-Length: <span class="m">256</span>
+Connection: keep-alive
+Server: gunicorn/19.9.0
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: <span class="nb">true</span>
+</code></pre></div>
+
+<p><strong>Add an HTTP header with <code>--header</code> (<code>-H</code>)</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">curl</span><span class="w"> </span><span class="nt">-I</span><span class="w"> </span><span class="s2">&quot;https://httpbin.org/bearer&quot;</span><span class="w"> </span><span class="nt">-H</span><span class="w"> </span><span class="s2">&quot;accept: application/json&quot;</span><span class="w"> </span><span class="nt">-H</span><span class="w"> </span><span class="s2">&quot;Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&quot;</span><span class="w"> </span>
+<span class="nt">HTTP</span><span class="o">/</span><span class="nt">2</span><span class="w"> </span><span class="nt">401</span><span class="w"> </span>
+<span class="nt">date</span><span class="o">:</span><span class="w"> </span><span class="nt">Mon</span><span class="o">,</span><span class="w"> </span><span class="nt">14</span><span class="w"> </span><span class="nt">Nov</span><span class="w"> </span><span class="nt">2022</span><span class="w"> </span><span class="nt">00</span><span class="p">:</span><span class="nd">10</span><span class="p">:</span><span class="nd">22</span><span class="w"> </span><span class="nt">GMT</span><span class="w"></span>
+<span class="nt">content-type</span><span class="o">:</span><span class="w"> </span><span class="nt">text</span><span class="o">/</span><span class="nt">html</span><span class="o">;</span><span class="w"> </span><span class="nt">charset</span><span class="o">=</span><span class="nt">utf-8</span><span class="w"></span>
+<span class="nt">content-length</span><span class="o">:</span><span class="w"> </span><span class="nt">0</span><span class="w"></span>
+<span class="nt">server</span><span class="o">:</span><span class="w"> </span><span class="nt">gunicorn</span><span class="o">/</span><span class="nt">19</span><span class="p">.</span><span class="nc">9</span><span class="p">.</span><span class="nc">0</span><span class="w"></span>
+<span class="nt">www-authenticate</span><span class="o">:</span><span class="w"> </span><span class="nt">Bearer</span><span class="w"></span>
+<span class="nt">access-control-allow-origin</span><span class="o">:</span><span class="w"> </span><span class="o">*</span><span class="w"></span>
+<span class="nt">access-control-allow-credentials</span><span class="o">:</span><span class="w"> </span><span class="nt">true</span><span class="w"></span>
+</code></pre></div>
+
+<p><strong>Write response content to a file with <code>-output</code>(<code>-o</code>)</strong></p>
+<p>You can also use <code>--remote-name</code>(<code>-O</code>) to write to a local file named like the remote file.</p>
+<div class="highlight"><pre><span></span><code><span class="err">$</span> <span class="s s-Atom">curl</span> <span class="s2">&quot;https://httpbin.org/json&quot;</span> <span class="o">-</span><span class="nv">H</span> <span class="s2">&quot;accept: application/json&quot;</span> <span class="o">-</span><span class="s s-Atom">o</span> <span class="s s-Atom">output</span><span class="p">.</span><span class="s s-Atom">txt</span>
+  <span class="c1">% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current</span>
+                                 <span class="nv">Dload</span>  <span class="nv">Upload</span>   <span class="nv">Total</span>   <span class="nv">Spent</span>    <span class="nv">Left</span>  <span class="nv">Speed</span>
+<span class="mi">100</span>   <span class="mi">429</span>  <span class="mi">100</span>   <span class="mi">429</span>    <span class="mi">0</span>     <span class="mi">0</span>   <span class="mi">4930</span>      <span class="mi">0</span> <span class="s s-Atom">--:--:--</span> <span class="s s-Atom">--:--:--</span> <span class="s s-Atom">--:--:--</span>  <span class="mi">5362</span>
+<span class="err">$</span> <span class="s s-Atom">cat</span> <span class="s s-Atom">output</span><span class="p">.</span><span class="s s-Atom">txt</span> 
+<span class="p">{</span>
+  <span class="s2">&quot;slideshow&quot;</span><span class="o">:</span> <span class="p">{</span>
+    <span class="s2">&quot;author&quot;</span><span class="o">:</span> <span class="s2">&quot;Yours Truly&quot;</span><span class="p">,</span> 
+    <span class="s2">&quot;date&quot;</span><span class="o">:</span> <span class="s2">&quot;date of publication&quot;</span><span class="p">,</span> 
+    <span class="s2">&quot;slides&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;Wake up to WonderWidgets!&quot;</span><span class="p">,</span> 
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;all&quot;</span>
+      <span class="p">},</span> 
+      <span class="p">{</span>
+        <span class="s2">&quot;items&quot;</span><span class="o">:</span> <span class="p">[</span>
+          <span class="s2">&quot;Why &lt;em&gt;WonderWidgets&lt;/em&gt; are great&quot;</span><span class="p">,</span> 
+          <span class="s2">&quot;Who &lt;em&gt;buys&lt;/em&gt; WonderWidgets&quot;</span>
+        <span class="p">],</span> 
+        <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;Overview&quot;</span><span class="p">,</span> 
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;all&quot;</span>
+      <span class="p">}</span>
+    <span class="p">],</span> 
+    <span class="s2">&quot;title&quot;</span><span class="o">:</span> <span class="s2">&quot;Sample Slide Show&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Mute progress bar with <code>--silent</code> (<code>-s</code>) flag</strong></p>
+<p>This is for preventing the progress bar from appearing in the terminal/file output, as seen in the example above.</p>
+<div class="highlight"><pre><span></span><code>$ curl -s <span class="s2">&quot;https://httpbin.org/json&quot;</span> -H <span class="s2">&quot;accept: application/json&quot;</span> -o output.txt
+$
+</code></pre></div>
+
+<p><strong>Connect through a proxy with <code>--proxy</code>(<code>-x</code>)</strong></p>
+<div class="highlight"><pre><span></span><code>curl -vI -x &quot;http://127.0.0.1:3128&quot; &quot;http://httpbin.org/get&quot;
+*   Trying 127.0.0.1:3128...
+* Connected to 127.0.0.1 (127.0.0.1) port 3128 (#0)
+&gt; HEAD http://httpbin.org/get HTTP/1.1
+&gt; Host: httpbin.org
+&gt; User-Agent: curl/7.79.1
+&gt; Accept: */*
+&gt; Proxy-Connection: Keep-Alive
+&gt; 
+* Mark bundle as not supporting multiuse
+&lt; HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+&lt; Date: Mon, 14 Nov 2022 01:03:32 GMT
+Date: Mon, 14 Nov 2022 01:03:32 GMT
+&lt; Content-Type: application/json
+Content-Type: application/json
+&lt; Content-Length: 308
+Content-Length: 308
+&lt; Server: gunicorn/19.9.0
+Server: gunicorn/19.9.0
+&lt; Access-Control-Allow-Origin: *
+Access-Control-Allow-Origin: *
+&lt; Access-Control-Allow-Credentials: true
+Access-Control-Allow-Credentials: true
+&lt; X-Cache: MISS from 82fe2e923e70
+X-Cache: MISS from 82fe2e923e70
+&lt; X-Cache-Lookup: MISS from 82fe2e923e70:3128
+X-Cache-Lookup: MISS from 82fe2e923e70:3128
+&lt; Via: 1.1 82fe2e923e70 (squid/5.2)
+Via: 1.1 82fe2e923e70 (squid/5.2)
+&lt; Connection: keep-alive
+Connection: keep-alive
+
+&lt; 
+* Connection #0 to host 127.0.0.1 left intact
+</code></pre></div>
+
+<p><strong>Ignore certificate errors and allow insecure connection with <code>--insecure</code> (<code>-k</code>)</strong></p>
+<div class="highlight"><pre><span></span><code>$ curl -I -k https://self-signed.badssl.com/
+HTTP/1.1 <span class="m">200</span> OK
+Server: nginx/1.10.3 <span class="o">(</span>Ubuntu<span class="o">)</span>
+Date: Mon, <span class="m">14</span> Nov <span class="m">2022</span> <span class="m">00</span>:47:01 GMT
+Content-Type: text/html
+Content-Length: <span class="m">502</span>
+Last-Modified: Thu, <span class="m">27</span> Oct <span class="m">2022</span> <span class="m">19</span>:09:20 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;635ad760-1f6&quot;</span>
+Cache-Control: no-store
+Accept-Ranges: bytes
+</code></pre></div>
+
+<p><strong>Customize output with <code>--write-out</code>(<code>-w</code>)</strong></p>
+<p>This is useful for writing some output and statistics about the request once complete in a custom format. There are many variables which can be viewed by viewing the <code>curl</code> man page. Variables are specified as<code>%{variable_name}</code>.</p>
+<div class="highlight"><pre><span></span><code>$ curl -w <span class="s2">&quot;Response content: %{content_type}, Number of headers: %{num_headers}.\n&quot;</span> <span class="s2">&quot;http://httpbin.org/get&quot;</span>   
+<span class="o">{</span>
+  <span class="s2">&quot;args&quot;</span>: <span class="o">{}</span>, 
+  <span class="s2">&quot;headers&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;Accept&quot;</span>: <span class="s2">&quot;*/*&quot;</span>, 
+    <span class="s2">&quot;Host&quot;</span>: <span class="s2">&quot;httpbin.org&quot;</span>, 
+    <span class="s2">&quot;User-Agent&quot;</span>: <span class="s2">&quot;curl/7.79.1&quot;</span>, 
+    <span class="s2">&quot;X-Amzn-Trace-Id&quot;</span>: <span class="s2">&quot;Root=1-6371958f-37e6cc1d206f89c023cf99dd&quot;</span>
+  <span class="o">}</span>, 
+  <span class="s2">&quot;origin&quot;</span>: <span class="s2">&quot;141.155.142.134&quot;</span>, 
+  <span class="s2">&quot;url&quot;</span>: <span class="s2">&quot;http://httpbin.org/get&quot;</span>
+<span class="o">}</span>
+Response content: application/json, Number of headers: <span class="m">7</span>.
+</code></pre></div>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/networking.html">networking</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/linux.html">#linux</a>
+          <a class="text-reset" href="./tag/networking.html">#networking</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - Bash Script to View and Save Shell Prompts</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="linux" />
+    <meta name="tags" content="programming" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./bash-script-to-view-and-save-shell-prompts.html" rel="bookmark"
+         title="Permalink to Bash Script to View and Save Shell Prompts">Bash Script to View and Save Shell Prompts</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-09-25T00:00:00-04:00">
+      Sun 25 September 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>Below is a bash script I worked on which allows users to save shell prompts as profiles for reuse. If run without arguments, the script will prompt you to select one of your saved prompts and print commands to apply it to either the current shell session or to all future sessions. To save a prompt, you can run the script with the optional <code>prompt</code> argument, which is a single-quoted prompt you want to save for re-use. </p>
+<p>An interesting feature of this script is its use of prompt expansion, which was introduced in Bash 4.4. Prompt expansion allows you to view the expanded prompt in the output without having to modify <code>PS1</code>. </p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env bash</span>
+
+<span class="nb">set</span> -e
+
+<span class="nv">PROGRAM_NAME</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>basename <span class="si">${</span><span class="nv">0</span><span class="si">}</span><span class="k">)</span><span class="s2">&quot;</span>
+<span class="nv">PROMPT</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span>
+<span class="nv">PROMPTS_FILE</span><span class="o">=</span><span class="s2">&quot;/home/</span><span class="si">${</span><span class="nv">USER</span><span class="si">}</span><span class="s2">/.prompts&quot;</span>
+
+help<span class="o">()</span>
+<span class="o">{</span>
+   <span class="nb">echo</span> <span class="s2">&quot;&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">PROGRAM_NAME</span><span class="si">}</span><span class="s2">: </span><span class="nv">$PROGRAM_NAME</span><span class="s2"> [prompt]&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;   Save bash prompts for reuse. Prompts are saved to </span><span class="si">${</span><span class="nv">PROMPTS_FILE</span><span class="si">}</span><span class="s2">.&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;   Options:&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;     prompt    A bash prompt to save (must be double quoted)&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;     -h        Print this help&quot;</span>
+   <span class="nb">echo</span> <span class="s2">&quot;&quot;</span>
+<span class="o">}</span>
+
+<span class="k">for</span> ARG <span class="k">in</span> <span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
+<span class="k">do</span>
+    <span class="k">case</span> <span class="nv">$ARG</span> <span class="k">in</span>
+        -h<span class="p">|</span>-H<span class="o">)</span>  <span class="nb">help</span>
+            <span class="nb">exit</span>
+            <span class="p">;;</span>
+        *<span class="o">)</span>  <span class="k">continue</span>
+            <span class="p">;;</span>
+    <span class="k">esac</span>
+<span class="k">done</span>
+
+<span class="k">if</span> <span class="o">[</span> -n <span class="s2">&quot;</span><span class="nv">$PROMPT</span><span class="s2">&quot;</span> <span class="o">]</span>
+<span class="k">then</span>
+    <span class="nb">echo</span> <span class="s2">&quot;Expanded prompt: </span><span class="si">${</span><span class="nv">PROMPT</span><span class="p">@P</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="nb">read</span> -n <span class="m">2</span> -p <span class="s2">&quot;Save this prompt? (y/n)? &quot;</span>
+
+    <span class="k">case</span> <span class="s2">&quot;</span><span class="nv">$REPLY</span><span class="s2">&quot;</span> <span class="k">in</span>
+        y<span class="p">|</span>Y<span class="o">)</span>
+            <span class="nb">read</span> -p <span class="s2">&quot;Enter prompt name: &quot;</span> PROMPT_NAME
+            <span class="k">if</span> <span class="o">[</span> <span class="s2">&quot;</span><span class="k">$(</span>grep -e ^<span class="si">${</span><span class="nv">PROMPT_NAME</span><span class="si">}</span><span class="s1">$&#39;\t&#39;</span> <span class="nv">$PROMPTS_FILE</span> <span class="p">|</span> awk -F <span class="s1">&#39;\t&#39;</span> <span class="s1">&#39;{print $1}&#39;</span><span class="k">)</span><span class="s2">&quot;</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="nv">$PROMPT_NAME</span><span class="s2">&quot;</span> <span class="o">]</span>
+            <span class="k">then</span>
+                <span class="nb">echo</span> <span class="s2">&quot;Prompt with name &quot;</span><span class="nv">$PROMPT_NAME</span><span class="s2">&quot; already exists.&quot;</span>
+                <span class="nb">exit</span> <span class="m">1</span>
+            <span class="k">fi</span>
+            <span class="nb">echo</span> -ne <span class="s2">&quot;</span><span class="si">${</span><span class="nv">PROMPT_NAME</span><span class="si">}</span><span class="s2">\t&quot;</span> &gt;&gt; <span class="nv">$PROMPTS_FILE</span>
+            <span class="nb">echo</span> <span class="s2">&quot;</span><span class="nv">$PROMPT</span><span class="s2">&quot;</span> &gt;&gt; <span class="nv">$PROMPTS_FILE</span>
+            <span class="nb">echo</span> <span class="s2">&quot;Saved \&quot;</span><span class="si">${</span><span class="nv">PROMPT_NAME</span><span class="si">}</span><span class="s2">\&quot;.&quot;</span>
+            <span class="nb">exit</span> <span class="m">0</span>
+            <span class="p">;;</span>
+        *<span class="o">)</span>  
+            <span class="nb">echo</span> <span class="s2">&quot;Prompt not saved.&quot;</span>
+            <span class="nb">exit</span> <span class="m">1</span>
+            <span class="p">;;</span>
+    <span class="k">esac</span>
+<span class="k">else</span>
+    <span class="k">if</span> <span class="o">[</span> -f <span class="s2">&quot;</span><span class="nv">$PROMPTS_FILE</span><span class="s2">&quot;</span> <span class="o">]</span>
+    <span class="k">then</span>
+        <span class="nv">LINE_NO</span><span class="o">=</span><span class="m">1</span>
+        <span class="k">while</span> <span class="nv">IFS</span><span class="o">=</span><span class="s1">$&#39;\t&#39;</span> <span class="nb">read</span> -r name prompt
+        <span class="k">do</span>
+            <span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">LINE_NO</span><span class="si">}</span><span class="s2">). </span><span class="nv">$name</span><span class="s2">: </span><span class="si">${</span><span class="nv">prompt</span><span class="p">@P</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">((</span>LINE_NO++<span class="o">))</span>
+        <span class="k">done</span> &lt; <span class="s2">&quot;</span><span class="nv">$PROMPTS_FILE</span><span class="s2">&quot;</span>
+        <span class="nb">echo</span> <span class="s2">&quot;&quot;</span>
+        <span class="nb">read</span> -n <span class="m">4</span> -p <span class="s2">&quot;Select prompt: &quot;</span> SELECTED_PROMPT
+        <span class="k">if</span> <span class="o">[[</span> <span class="s2">&quot;</span><span class="nv">$SELECTED_PROMPT</span><span class="s2">&quot;</span> <span class="o">=</span>~ ^<span class="o">[[</span>:digit:<span class="o">]]{</span><span class="m">1</span>,3<span class="o">}</span>$ <span class="o">]]</span>
+        <span class="k">then</span>
+            <span class="nv">PROMPT</span><span class="o">=</span><span class="k">$(</span>sed <span class="s2">&quot;</span><span class="si">${</span><span class="nv">SELECTED_PROMPT</span><span class="si">}</span><span class="s2">q;d&quot;</span> <span class="nv">$PROMPTS_FILE</span> <span class="p">|</span> awk -F <span class="s1">&#39;\t&#39;</span> <span class="s1">&#39;{print $2}&#39;</span><span class="k">)</span>
+            cat <span class="s">&lt;&lt;-EOF</span>
+
+<span class="s">                Run this command to apply prompt to current session:</span>
+<span class="s">                    export PS1=&quot;${PROMPT}&quot;</span>
+
+<span class="s">                Or, make the change permanent by modifying your .bashrc:</span>
+<span class="s">                    echo &#39;export PS1=&quot;${PROMPT}&quot;&#39; &gt;&gt; /home/${USER}/.bashrc</span>
+
+<span class="s">            EOF</span>
+        <span class="k">else</span>
+            <span class="nb">echo</span> <span class="s2">&quot;Invalid entry.&quot;</span>
+            <span class="nb">exit</span> <span class="m">1</span>
+        <span class="k">fi</span>
+    <span class="k">else</span>
+        <span class="nb">echo</span> <span class="s2">&quot;No prompts to display.&quot;</span>
+        <span class="nb">exit</span> <span class="m">1</span>
+    <span class="k">fi</span>
+<span class="k">fi</span>
+</code></pre></div>
+
+<h3>Explanation of code:</h3>
+<ul>
+<li><em>Line 1:</em> this is a shebang, which tells the kernel what program to use to execute the script. In this, I use <code>/usr/bin/env bash</code> which has the benefit of finding the path to <code>bash</code> using the current shell environment. Running <code>env</code> alone prints all environment variables present on the system, including <code>$PATH</code> which, in this case, will be used to locate the interpreter (<code>bash</code>), improving portability.</li>
+<li><em>Line 3:</em> <code>set</code> is a shell builtin which is used to change shell options. Running it with the <code>-e</code> flag changes the shell settings so that the script exits if any command exits with an error.</li>
+<li><em>Lines 5-7:</em> here I'm declaring some variables to be used later. <code>PROGRAME_NAME</code> is the name of the script- <code>$0</code> returns the relative path to the script, which I use the <code>basename</code> command on to extract only the file name. <code>PROMPT</code> is the optional prompt to be saved and set to the value of the first argument passed to the script (<code>$1</code>). <code>PROMPTS_FILE</code> is the file where prompts are saved- the path to the user's home directory is dynamically generated using the <code>$USER</code> envionment variable, which returns the user's username.</li>
+<li><em>Lines 9-19:</em> this is a bash function which prints the usage menu to the screen. </li>
+<li><em>Lines 21-30:</em> here I am using a bash for loop to loop through<code>$@</code>, which expands to all positional arguments provided the script. Within this loop, there is a switch statement to see if any of the arguments are <code>-h</code> or <code>-H</code>, in which case the script prints the help menu and exits. If the argument is anything else, the switch statement continues looping through the arguments.</li>
+<li><em>Lines 32-87:</em> this is a large bash <code>if</code> statement which determines the use of the script as being either for saving a prompt, or retrieving one.</li>
+</ul>
+<p><strong>Path one: a prompt was provided</strong></p>
+<ul>
+<li><em>Lines 32-33:</em> here, the script tests to see that <code>PROMPT</code> is a string with a length greater than zero, which is true if the user passes an argument to the script.</li>
+<li><em>Lines 34-35:</em> here, the value passed to the script is display using prompt expansion (<code>@P</code>), allowing the user to see what the prompt will look like before making any changes. Then, the user is prompted to save the prompt with the <code>read</code> command. <code>read</code> provides a prompt (<code>-p</code>) and accepts user input, which I restrict to 2 characters with <code>-n</code> (any character and a carriage return).</li>
+<li><em>Lines 37-55:</em> this is a switch statement to validate the user input. It tests the value of <code>REPLY</code> which is the default variable returned by the read command with the user input.<ul>
+<li><em>Lines 38-44:</em> if the user inputs <code>y</code> or <code>Y</code>, the <code>read</code> command is run to accept a name for the prompt (which will be savd in <code>PROMPT_NAME</code>). Then, a bash <code>if</code> statement checks to see if the value input already exists. To do so, a condition is provided using command expansion, to see if the returned string is equal to the provided prompt. <ul>
+<li><code>"grep -e ^${PROMPT_NAME:=""}$'\t' $PROMPTS_FILE</code> searches the user's <code>.prompts</code> file to see if a prompt with <code>PROMPT_NAME</code> already exists. <code>grep</code> is run with the <code>-e</code> option to match a regex, the regex here asserting that the prompt name be at the beginning of the line and preceded by a tab character.</li>
+<li>Matching lines are then piped into <code>awk -F '\t' '{print $1}'</code>, which breaks the line on the tab character, specified with the <code>-F</code> option, and returns only the first part (the name of the prompt). This is finally compared to the input prompt name using the <code>=</code> operator to see if they are the same and, if so, the script exits.</li>
+</ul>
+</li>
+<li><em>Lines 45-49:</em> if the prompt doesn't exist, the new prompt is saved to the user's <code>.prompts</code> file. This is done in multiple echo statements as, in order to add a tab character, <code>echo</code> needs to be run with the <code>-e</code> flag in order to interprate backslash escapes. If the prompt is printed to the file with the <code>-e</code> flag however, it will have the unwanted effect of modifying the characters. Therefore, the first <code>echo</code> statement adds the name of the prompt followed by an interpretated tab character (<code>-e</code>) and no newline (<code>-n</code>), to which the second <code>echo</code> statement can append the prompt.</li>
+<li><em>Lines 50-52:</em> if the user entered anything but case-insensitive <code>y</code>, exit.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Path two: a prompt was not provided</strong></p>
+<ul>
+<li><em>Line 55:</em> test to see if the user's <code>.prompts</code> file exists on the system, using the <code>-f</code> test. If it does not, the script exists as their are no prompts saved.</li>
+<li><em>Lines 56-62:</em> this a a bash <code>while</code> loop which reads in all lines of the user's <code>.prompts</code> file and displays them to the screen. A <code>LINE_NO</code> variable is declared in order to keep track of the line number in the file. The <code>read</code> command is run with a modification <code>IFS</code>, which <code>read</code> uses as a delimiter (usually a space). Since the separator between the prompt name and the prompt is a tab, that is used for the value of <code>IFS</code> to yield a name and value per line. Then, the line number, prompt name, and expanded prompt are displayed to the screen.</li>
+<li><em>Line 63:</em> prompt the user for which number prompt they want to use and save it as <code>SELECTED_PROMPT</code></li>
+<li><em>Line 64:</em> this <code>if</code> statement tests the value of <code>SELECTED_PROMPT</code> using <code>[[]]</code>, which supports the <code>=~</code> operator to check that the value matches a regex. The regex requires the user enter a number between 1-3 characters in length. If this fails, the script exits.</li>
+<li><em>Lines 66-75:</em> search the user's <code>.prompts</code> file to return only the line containing the selected prompt. To do this, <code>sed</code> is used with the <code>d</code> command. The file is read in by sed and each line discarded until <code>SELECTED_PROMPT</code> is reached, at which point <code>sed</code> exits, returning that line. This is piped into <code>awk</code>, which uses the tab character as a delimiter to retrieve the name and prompt and return only the prompt (<code>$2</code>). Finally, the prompt is formatted to provide the user with two commands to either modify <code>PS1</code> in the current session, or make a more permanent change to the <code>.bashrc</code>. This output is printed by cat using a heredoc with the <code>&lt;&lt;-</code> redirection operator, to ensure it ignores the tab all leading tab characters in the text.</li>
+</ul>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/linux.html">linux</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/linux.html">#linux</a>
+          <a class="text-reset" href="./tag/programming.html">#programming</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

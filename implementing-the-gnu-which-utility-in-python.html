@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - Implementing the GNU which utility in Python</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="programming" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./implementing-the-gnu-which-utility-in-python.html" rel="bookmark"
+         title="Permalink to Implementing the GNU which utility in Python">Implementing the GNU which utility in Python</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-10-23T00:00:00-04:00">
+      Sun 23 October 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>This is an implentation of the <code>which</code> utility in Python, <code>which</code> can be run on Windows, MacOS, and Linux. The <code>which</code> utility prints the complete path to target executables on a system and can be useful for finding the install location of a program, or to check if a program is installed and in the path.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;PATH&#39;</span><span class="p">)</span>
+    <span class="n">dirs</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win32&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span> <span class="n">prog</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">prog</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">program</span> <span class="p">}</span>
+    <span class="k">for</span> <span class="nb">dir</span> <span class="ow">in</span> <span class="n">dirs</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">os</span><span class="o">.</span><span class="n">scandir</span><span class="p">(</span><span class="nb">dir</span><span class="p">)</span> <span class="k">as</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">results</span> <span class="ow">and</span> <span class="n">file</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                    <span class="n">results</span><span class="p">[</span><span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="n">exit_status</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="p">:</span>
+            <span class="n">exit_status</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">a</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">s</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">s</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">exit_status</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">argparse</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">prog</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Locate a program file in the user&#39;s path&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;program&#39;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;List of command names&#39;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-a&#39;</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List all instances of executables found (instead of just the first one of each).&quot;</span><span class="p">,</span> 
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-s&#39;</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;No output, just return 0 if all of the executables are found, or 1 if some were not found.&quot;</span><span class="p">,</span> 
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Explanation of code:</strong></p>
+<p>When the program is first run, the script checks to see if it is being executed directly and, if so, imports <code>argparse</code> module, which parses command line arguments. An <code>ArgumentParser</code> object is instantiated with the file name is the program name and a description. Arguments are then added to the instance using <code>add_argument</code>. The main arguments which need to be provided are (1. a list of programs, (2. the <code>-a</code> flag, which decides whether all instances of the executable will be printed or only the first in the path, and (3. the <code>-s</code> flag, which allows for nothing to be printed and only an exit code returned. The arguments passed to the script are parsed into a <code>argparse.Namespace</code> object with <code>parse_args</code> and saved as a variable named <code>args</code>, which is then passed to the <code>main</code> function.</p>
+<p>The <code>main</code> function contains the logic to find the paths to the executables. It accepts an <code>argparse.Namespace</code> object which contains all the arguments provided to the script and will be used to determine the output. First, <code>os.getenv</code> is used to get the <code>PATH</code> variable (used on Windows, MacOS, and Linux) which is then split on either the semi-colon (Windows) or the colon (other platforms) using <code>sys.platform</code> to determine which it is executed on.</p>
+<p>Next, a <code>results</code> dictionary is initialized using dict comprehension to set a key for each program passed as an argument with an empty list as its value. As each directory will need to be searched for the provided program, a <code>for</code> loop is declared to iterate over the paths parsed from the <code>PATH</code> variable.</p>
+<p>For each directory, <a href="https://docs.python.org/3/library/os.html#os.scandir"><code>os.scandir</code></a> is used within a context manager to scan for matching files. It returns an iterator of <code>os.DirEntry</code> objects, representing all files in the directory. These objects containing useful file attributes, two of which are used in the next line. If the basename of the file is in the <code>results</code> dict and the file is a file, its absolute path is appended to the array for that file.</p>
+<p>Once the directories have been scanned, the results will need to be printed depending on the flags provided to the program, and the program exit with a status code. <code>which</code> exits with <code>0</code> if executables were found and <code>1</code>, if not. To accomplish this, an <code>exit_status</code> variable is declared with an initial value <code>0</code>. Then, <code>results</code> is looped over to check if any paths exist for each file. If no matching files were found for a given program, <code>exit_status</code> is changed to <code>1</code> and the the iteration continues. If there are matching files, and <code>-a</code> was passed, the paths to the files are printed. If there are matching files and <code>-a</code> and <code>-s</code> were not passed, then the first path in the array is printed. If neither of the above clauses are true, then <code>-s</code> was passed and no files are printed. The program finally exits with the appropriate exit code, indicating whether or not each program passed to the script exists somewhere in the user's <code>PATH</code>.</p>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/python.html">python</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/python.html">#python</a>
+          <a class="text-reset" href="./tag/programming.html">#programming</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

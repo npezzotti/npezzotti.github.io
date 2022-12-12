@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - How to deploy an Nginx server on AWS EC2 with Terraform</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="terraform" />
+    <meta name="tags" content="aws" />
+    <meta name="tags" content="devops" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./how-to-deploy-an-nginx-server-on-aws-ec2-with-terraform.html" rel="bookmark"
+         title="Permalink to How to deploy an Nginx server on AWS EC2 with Terraform">How to deploy an Nginx server on AWS EC2 with Terraform</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-08-19T00:00:00-04:00">
+      Fri 19 August 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>In this tutorial, we will use Terraform to create a VPC with a single public subnet in which we will launch an EC2 instance running Nginx.</p>
+<p>By the end of this, you will have learned the following:</p>
+<ul>
+<li>Basic understanding of Terraform and usage</li>
+<li>Familiary with the following AWS Services:<ul>
+<li>VPC</li>
+<li>Subnets</li>
+<li>Security Groups</li>
+<li>AMI</li>
+<li>EC2</li>
+</ul>
+</li>
+</ul>
+<h2>Getting Started</h2>
+<h3>What is Terraform?</h3>
+<p>Terraform is an infrastructure as code tool. Infastructure as code tools allow you to programmatically spin up resources such as EC2s, Azure VMs, etc. through code. In Terraform, this code is called HCL (Hashicorp configuration language). The language is declaritive, meaning it describes the state of your infrastructure and leaves the details of arriving at that state up to Terraform.</p>
+<h3>Terraform Setup</h3>
+<h4>Install Terraform</h4>
+<p>Refer to the official documentation on installing Terraform <a href="https://learn.hashicorp.com/tutorials/terraform/install-cli">here</a>, where you can find dedicated instructions for MacOS, Windows, different Linux distributions, and a manual method.</p>
+<h4>Terraform module</h4>
+<p>Create a directory to hold the files for your project and change into the directory:</p>
+<div class="highlight"><pre><span></span><code>$ mkdir terraform-ec2-nginx <span class="o">&amp;&amp;</span> <span class="nb">cd</span> terraform-ec2-nginx
+</code></pre></div>
+
+<p>Run the following command to create the main file for our module:</p>
+<div class="highlight"><pre><span></span><code>$ touch main.tf
+</code></pre></div>
+
+<p>In the <code>main.tf</code> add the following code:</p>
+<div class="highlight"><pre><span></span><code>terraform {
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 4.16&quot;
+    }
+  }
+
+  required_version = &quot;&gt;= 1.2.0&quot;
+}
+</code></pre></div>
+
+<p>This code creates a <code>terraform</code> block, where you configure Terraform settings. In this block, we are adding a version constraint for Terraform with the <code>required_version</code> directive, and defining the required providers (<code>aws</code>) with their source address and version constraints. </p>
+<p>Terraform providers are plugins which work with a related set of resources/APIs, such as those exposed by cloud providers like AWS, GCP or Azure. In this project, we will use the <code>hashicorp/aws</code> provider to spin up AWS resources. Authentication to AWS can be configured in multiple ways in this provider, though we rely on shared configuration files in this tutorial, which requires you <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html">install and configure the AWS CLI on your local machine with access keys</a>. Access keys allow programmatic access to the AWS API and are associated to a particular IAM user. For more information on creating an access key, see the <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey">AWS documentation</a>. The <code>aws</code> provider will souce the default credentials in <code>$HOME/.aws/config</code> and <code>$HOME/.aws/credentials</code> on Linux and macOS, and <code>"%USERPROFILE%\.aws\config"</code> and <code>"%USERPROFILE%\.aws\credentials"</code> on Windows.</p>
+<p>Alternatively, you can skip configuring the AWS CLI and configure the provider with environment variables:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">export</span> <span class="nv">AWS_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;ACCESS_KEY&quot;</span>
+$ <span class="nb">export</span> <span class="nv">AWS_SECRET_ACCESS_KEY</span><span class="o">=</span><span class="s2">&quot;SECRET_KEY&quot;</span>
+</code></pre></div>
+
+<h3>Create AWS Resources</h3>
+<p>Below the <code>terraform</code> block, add the following code:</p>
+<div class="highlight"><pre><span></span><code><span class="n">provider</span><span class="w"> </span><span class="s2">&quot;aws&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">var</span><span class="o">.</span><span class="n">aws_region</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p><code>provider</code> blocks are where you configure the provider you are using. In the code above, we are setting the AWS region in which we'll be creating these resource.</p>
+<p>In the above code, we are referencing a Terraform variable, which we will create next. A Terraform variable is a static value which can be set in one place and referenced throughout your module.</p>
+<p>Create a <code>variables.tf</code> file in this directory:</p>
+<div class="highlight"><pre><span></span><code>$  touch variables.tf
+</code></pre></div>
+
+<p>Add the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="n">variable</span><span class="w"> </span><span class="s2">&quot;aws_region&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="w"></span>
+<span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;AWS region&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">default</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;us-east-1&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>In this code we are defining our input variable within a <code>variable</code> block. The variable will be a string and will have a default value of <code>us-east-1</code>. If we'd like to override these defaults, we can do so later when running <code>terraform apply</code> by usin the <code>-var</code> flag. </p>
+<p>Let's also add a variable for our project name, which we can reference when defining metadata on resources, and an availability zone:</p>
+<div class="highlight"><pre><span></span><code><span class="n">variable</span><span class="w"> </span><span class="s2">&quot;project-name&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="w"></span>
+<span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Name of the project&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">default</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;tf-nginx&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">variable</span><span class="w"> </span><span class="s2">&quot;tf-nginx-az&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="w"></span>
+<span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;AZ for NginxServer&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">default</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;us-east-1a&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>The first resource we need to create is a VPC. A VPC is a virtual network which is unique to your AWS account and is logically isolated from other virtual networks.</p>
+<p>Add the following code to the <code>main.tf</code> file:</p>
+<div class="highlight"><pre><span></span><code><span class="n">resource</span><span class="w"> </span><span class="s2">&quot;aws_vpc&quot;</span><span class="w"> </span><span class="s2">&quot;tf-nginx-vpc&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cidr_block</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/16&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">enable_dns_hostnames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">true</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${var.project-name}-vpc&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>This code uses the <code>aws_vpc</code> resource to create a VPC with a <code>10.0.0.0/16</code> IPv4 CIDR block and support for assigning a public DNS name to all EC2s created within it.</p>
+<p>To allow resources in our VPC to have access the internet, we need to create an internet gateway and attach it to the VPC.</p>
+<div class="highlight"><pre><span></span><code><span class="n">resource</span><span class="w"> </span><span class="s2">&quot;aws_internet_gateway&quot;</span><span class="w"> </span><span class="s2">&quot;tf-nginx-igw&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">vpc_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aws_vpc</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">vpc</span><span class="o">.</span><span class="n">id</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${var.project-name}-igw&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>By default, each VPC comes with a single route table configured with a local route. In order to route traffic between the internet and our EC2, we need to configure a route table with a route for any public traffic.</p>
+<p>Add the following code in the <code>main.tf</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">resource</span><span class="w"> </span><span class="s2">&quot;aws_route_table&quot;</span><span class="w"> </span><span class="s2">&quot;tf-nginx-pulic-rt&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">vpc_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aws_vpc</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">vpc</span><span class="o">.</span><span class="n">id</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">route</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">cidr_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.0.0.0/0&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">gateway_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aws_internet_gateway</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">igw</span><span class="o">.</span><span class="n">id</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${var.project-name}-public-route-table&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Next, we will create a dedicated subnet in which we will deploy the EC2. A subnet is a range of IP addresses within a VPC which are created in a single availability zone and in which you can launch your AWS resources.</p>
+<p>Add the following code to the <code>main-tf</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">resource</span><span class="w"> </span><span class="s2">&quot;aws_subnet&quot;</span><span class="w"> </span><span class="s2">&quot;tf-nginx-subnet&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">vpc_id</span><span class="w">                  </span><span class="o">=</span><span class="w"> </span><span class="n">aws_vpc</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">vpc</span><span class="o">.</span><span class="n">id</span><span class="w"></span>
+<span class="w">  </span><span class="n">cidr_block</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;10.0.1.0/24&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">availability_zone</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="k">var</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">az</span><span class="w"></span>
+<span class="w">  </span><span class="n">map_public_ip_on_launch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">true</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${var.project-name}-subnet&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Here we have specified the VPC and availability zone in which we will create this subnet as well as an IPv4 CIDR block. Important to note is that we are setting <code>map_public_ip_on_launch</code> to <code>true</code>, which will allow instances created in this subnet to be created with a public IP address, which we will later use to access the Nginx site. </p>
+<p>We will also need to associate our subnet to the public route table we defined previously so that traffic from that subnet is routed to the internet gateway- add the following code to create a subnet association between our public route table and subnet:</p>
+<div class="highlight"><pre><span></span><code>resource &quot;aws_route_table_association&quot; &quot;tf-nginx-subnet-rt-association&quot; {
+  subnet_id      = aws_subnet.tf-nginx-subnet.id
+  route_table_id = aws_route_table.tf-nginx-pulic-rt.id
+}
+</code></pre></div>
+
+<p>Now we will create a security group for the EC2. A security group is like a virtual firewall which acts at the EC2 instance level- it allows us to control the traffic that is allowed in and out of the resources that it is associated with.</p>
+<p>Add the following code in the <code>main.tf</code> file:</p>
+<div class="highlight"><pre><span></span><code><span class="n">resource</span><span class="w"> </span><span class="s2">&quot;aws_security_group&quot;</span><span class="w"> </span><span class="s2">&quot;tf-nginx-sg&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">name</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${var.project-name}-sg&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">vpc_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aws_vpc</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">vpc</span><span class="o">.</span><span class="n">id</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">ingress</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">from_port</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">80</span><span class="w"></span>
+<span class="w">    </span><span class="n">to_port</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">80</span><span class="w"></span>
+<span class="w">    </span><span class="n">protocol</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;tcp&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cidr_blocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;0.0.0.0/0&quot;</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">ingress</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">from_port</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">    </span><span class="n">to_port</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">22</span><span class="w"></span>
+<span class="w">    </span><span class="n">protocol</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;tcp&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cidr_blocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;0.0.0.0/0&quot;</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">egress</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">from_port</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">    </span><span class="n">to_port</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"></span>
+<span class="w">    </span><span class="n">protocol</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;-1&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cidr_blocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;0.0.0.0/0&quot;</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>In this code, we used the <code>aws_security_group</code> resource to define a security group named <code>tf-nginx-sg</code> in our <code>tf-nginx-vpc</code>. We also defined two ingress rules which retrict all inbound TCP traffic to port 80 (for Nginx) and 22 (for SSH) from any IPv4 address. Additionally, we defined an egress rule which allows any outbound traffic from the EC2, by setting the <code>protocol</code> to <code>-1</code> and the ports to<code>0</code>.</p>
+<p>Lastly, we will define the EC2 instance:</p>
+<div class="highlight"><pre><span></span><code><span class="n">resource</span><span class="w"> </span><span class="s2">&quot;aws_instance&quot;</span><span class="w"> </span><span class="s2">&quot;tf-nginx-server&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">ami</span><span class="w">                         </span><span class="o">=</span><span class="w"> </span><span class="k">var</span><span class="o">.</span><span class="n">ami</span><span class="w"></span>
+<span class="w">  </span><span class="n">instance_type</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="k">var</span><span class="o">.</span><span class="n">instance_type</span><span class="w"></span>
+<span class="w">  </span><span class="n">subnet_id</span><span class="w">                   </span><span class="o">=</span><span class="w"> </span><span class="n">aws_subnet</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">subnet</span><span class="o">.</span><span class="n">id</span><span class="w"></span>
+<span class="w">  </span><span class="n">vpc_security_group_ids</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">aws_security_group</span><span class="o">.</span><span class="n">tf</span><span class="o">-</span><span class="n">nginx</span><span class="o">-</span><span class="n">sg</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="w"></span>
+<span class="w">  </span><span class="n">user_data</span><span class="w">                   </span><span class="o">=</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="s2">&quot;scripts/nginx.sh&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">user_data_replace_on_change</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">true</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">var</span><span class="o">.</span><span class="n">instance_name</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>In this code, we are specifying the EC2's Amazon machine image, type, and name (all input variables we will define in the next step), the subnet it should be created, and a list of security groups which should be attached. We are also adding a user-data script, which we will create in an upcoming step and enabling a setting that forces the re-creation of our EC2 if the script is altered.</p>
+<p>In the <code>variables.tf</code> file, add the following variables used above for the AMI, the instance type, and the instance name:</p>
+<div class="highlight"><pre><span></span><code><span class="n">variable</span><span class="w"> </span><span class="s2">&quot;instance_name&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Value of the Name of the EC2 instance&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="w"></span>
+<span class="w">  </span><span class="n">default</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;NginxServer&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">variable</span><span class="w"> </span><span class="s2">&quot;ami&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;AMI&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="w"></span>
+<span class="w">  </span><span class="n">default</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ami-090fa75af13c156b4&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="n">variable</span><span class="w"> </span><span class="s2">&quot;instance_type&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Instance type&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="n">type</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="w"></span>
+<span class="w">  </span><span class="n">default</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;t2.micro&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Now that the infrastructure is defined, we can turn our attention towards installing and configuring Nginx. To do this, we will create a <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#user-data-shell-scripts">user data script</a>. A user data script is a shell script which is run as the <code>root</code> user when an EC2 is initially created and allows you to apply some initial configuration to the server.</p>
+<p>Run the following commands to create the directory and file for our provisioning script:</p>
+<div class="highlight"><pre><span></span><code>$  mkdir scripts <span class="o">&amp;&amp;</span> touch scripts/nginx.sh
+</code></pre></div>
+
+<p>Add the following content to the <code>scripts/nginx.sh</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#! /bin/bash</span>
+
+<span class="nb">set</span> -e
+
+<span class="nb">echo</span>  <span class="s2">&quot;Updating packages&quot;</span>
+yum update -y
+
+<span class="k">if</span> <span class="o">[[</span> <span class="k">$(</span>amazon-linux-extras list <span class="p">|</span> grep nginx <span class="p">|</span> awk <span class="s1">&#39;{ print $3 }&#39;</span><span class="k">)</span> !<span class="o">=</span> <span class="s1">&#39;enabled&#39;</span> <span class="o">]]</span> 
+<span class="k">then</span>
+    <span class="nb">echo</span> <span class="s2">&quot;Enabling Nginx package&quot;</span>
+    amazon-linux-extras <span class="nb">enable</span> nginx1
+    yum clean metadata
+<span class="k">fi</span>
+
+<span class="nb">echo</span> <span class="s2">&quot;Installing Nginx&quot;</span>
+yum install -y nginx
+
+<span class="k">if</span> <span class="o">[[</span> <span class="k">$(</span>systemctl is-active nginx<span class="k">)</span> !<span class="o">=</span> <span class="s2">&quot;active&quot;</span> <span class="o">]]</span>
+<span class="k">then</span>
+    <span class="nb">echo</span> <span class="s2">&quot;Starting service nginx&quot;</span>
+    systemctl start nginx
+<span class="k">else</span>
+    <span class="nb">echo</span> <span class="s2">&quot;Nginx service is running&quot;</span>
+<span class="k">fi</span>
+
+<span class="k">if</span> <span class="o">[[</span> <span class="k">$(</span>systemctl is-enabled nginx<span class="k">)</span> !<span class="o">=</span> <span class="s2">&quot;enabled&quot;</span> <span class="o">]]</span>
+<span class="k">then</span>
+    <span class="nb">echo</span> <span class="s2">&quot;Enabling service nginx&quot;</span>
+    systemctl <span class="nb">enable</span> nginx
+<span class="k">fi</span>
+</code></pre></div>
+
+<p>This shell script performs the following actions:</p>
+<ol>
+<li>Enables the Nginx package in the amazon-linux-extras repository</li>
+<li>Installs the Nginx package</li>
+<li>Starts and enables the Nginx Systemd service</li>
+</ol>
+<p>When the instance is provisioned, you can view the contents of <code>/var/log/cloud-init-output.log</code> on the EC2 instance to view output of the script and debug if necessary.</p>
+<h3>Apply Configuration</h3>
+<p>Finally, we are ready to run this code and create the resources. Before doing so, create an <code>outputs.tf</code> file in the working directory with the following code:</p>
+<div class="highlight"><pre><span></span><code>$ touch ouputs.tf
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code>output &quot;instance_public_ip&quot; {
+  description = &quot;Public IP address of the EC2 instance&quot;
+  value       = aws_instance.tf-nginx-server.public_ip
+}
+</code></pre></div>
+
+<p>This code creates a Terraform <a href="https://www.terraform.io/language/values/outputs">output variable</a>, which allows the end user to access information about the provisioned resource. This variable returns the public IP address our EC2, which we will use to connect to the Nginx server.</p>
+<p>Run the following command to initalize Terraform in the current working directory:</p>
+<div class="highlight"><pre><span></span><code>$  terraform init
+</code></pre></div>
+
+<p>Next, run <code>terraform plan</code>:</p>
+<div class="highlight"><pre><span></span><code>$  terraform plan
+</code></pre></div>
+
+<p><code>terraform plan</code> will generate a plan of execution. Terraform will assess the current state of the resources to be created, identify any differences between the definition in your code and this state, and detail the changes it will make to these resources, without actually changing them. Since these are new resources, there is no existing state and Terraform is going to create all of them.</p>
+<p>When you are ready to apply these changes, run the following command to execute the plan:</p>
+<div class="highlight"><pre><span></span><code>$ terraform apply
+</code></pre></div>
+
+<p>When the command returns, you should be able to access the new EC2 at its public IP address and view the default Nginx site. Note the output variable we configured, which should be printed to the console when the command finishes. You can also print the outputs by running <code>terraform output</code>.</p>
+<p>Finally, run the following command to open the UR in your browser to view the Nginx default site:</p>
+<div class="highlight"><pre><span></span><code>$ open <span class="s2">&quot;http://</span><span class="k">$(</span>terraform output -raw instance_public_ip<span class="k">)</span><span class="s2">&quot;</span>
+</code></pre></div>
+
+<h3>Clean Up</h3>
+<p>To delete all managed resources, run the following command:</p>
+<div class="highlight"><pre><span></span><code>$ terraform destroy
+</code></pre></div>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/devops.html">devops</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/terraform.html">#terraform</a>
+          <a class="text-reset" href="./tag/aws.html">#aws</a>
+          <a class="text-reset" href="./tag/devops.html">#devops</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

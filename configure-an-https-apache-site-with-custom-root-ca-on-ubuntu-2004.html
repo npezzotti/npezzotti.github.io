@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - Configure an HTTPS Apache Site with Custom Root CA on Ubuntu 20.04</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="networking" />
+    <meta name="tags" content="linux" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./configure-an-https-apache-site-with-custom-root-ca-on-ubuntu-2004.html" rel="bookmark"
+         title="Permalink to Configure an HTTPS Apache Site with Custom Root CA on Ubuntu 20.04">Configure an HTTPS Apache Site with Custom Root CA on Ubuntu 20.04</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-09-04T00:00:00-04:00">
+      Sun 04 September 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>This tutorial demonstrates how to set up an HTTPS site on an Apache using a custom root CA for the purpose of exploring the workings of HTTPS.</p>
+<p>For this project, I used Ubuntu 20.04 and ran the command as a non-root user with sudo privileges.</p>
+<h3>Install Apache and Configure the Default Site:</h3>
+<p>Begin by installing Apache, which is the web server we will use to configure this HTTPS site:</p>
+<div class="highlight"><pre><span></span><code>$ sudo apt update <span class="o">&amp;&amp;</span> sudo apt install apache2
+</code></pre></div>
+
+<p>We'll use the default <code>000-default</code>, which Apache creates by default and which is already enabled. To see enabled sites, you can run <code>a2query -s</code>:</p>
+<div class="highlight"><pre><span></span><code>$ a2query -s
+<span class="m">000</span>-default <span class="o">(</span>enabled by site administrator<span class="o">)</span>
+</code></pre></div>
+
+<p>View the site's configuration file at <code>/etc/apache2/sites-available/000-default.conf</code>. The <code>DocumentRoot</code> directive is set to <code>/var/www/html</code>, which means it will serve the content of that directory. Nothing needs to be changed in this file for the purpose of this tutorial, however we will modify the content in the <code>/var/www/html/index.html</code> file. You can do that with the following command:</p>
+<div class="highlight"><pre><span></span><code>$ sudo bash -c <span class="s1">&#39;echo &quot;This is served over HTTPS!&quot; &gt; /var/www/html/index.html&#39;</span>
+</code></pre></div>
+
+<p>The site is currently listening on port <code>80</code> and you can <code>curl</code> the site to see the content:</p>
+<div class="highlight"><pre><span></span><code>$ curl http://localhost
+This is served over HTTPS!
+</code></pre></div>
+
+<p>This is, of course, not currently being served of HTTPS at the moment, so that is what we will configure next. </p>
+<h3>Configure TLS</h3>
+<p>To configure TLS, enable the <code>ssl</code> module in Apache, which provides TLS support:</p>
+<div class="highlight"><pre><span></span><code>$ sudo a2enmod ssl
+</code></pre></div>
+
+<p>A default Apache vhost configured to handle HTTPS traffic is created for you upon installation. Enable the <code>default-ssl</code> virtual host with the following command:</p>
+<div class="highlight"><pre><span></span><code>$ sudo a2ensite default-ssl
+</code></pre></div>
+
+<p>The <code>default-ssl</code> site basically handles all traffic to the server on port <code>443</code> if it is not previously matched by another virtual host. Inspect the <code>/etc/apache2/sites-available/default-ssl.conf</code> configuration to see the certificates and keys being used. Note that it will also serve the content of the <code>/var/www/html</code> directory.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;IfModule</span> <span class="err">mod_ssl.c</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;VirtualHost</span> <span class="err">_default_:443</span><span class="nt">&gt;</span>
+    ...
+    DocumentRoot /var/www/html
+    ...
+    SSLEngine on
+    SSLCertificateFile      /etc/ssl/certs/ssl-cert-snakeoil.pem
+    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+    ...
+    <span class="nt">&lt;/VirtualHost&gt;</span>
+<span class="nt">&lt;/IfModule&gt;</span>
+</code></pre></div>
+
+<p>The <code>ssl-cert-snakeoil.pem</code> is a self-signed certificate and is created on install. It can be used for testing HTTPS, however we will configure our own certificates shortly. You can view the content of the default certificate with the following command:</p>
+<div class="highlight"><pre><span></span><code>$ openssl x509 -in /etc/ssl/certs/ssl-cert-snakeoil.pem -text
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number:
+            <span class="m">59</span>:9b:4e:dc:97:ff:98:e0:ea:7d:40:ea:ee:8e:57:ed:68:30:06:1c
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: <span class="nv">CN</span> <span class="o">=</span> ubuntu.vm
+        Validity
+            Not Before: Sep <span class="m">10</span> <span class="m">16</span>:29:57 <span class="m">2022</span> GMT
+            Not After : Sep  <span class="m">7</span> <span class="m">16</span>:29:57 <span class="m">2032</span> GMT
+        Subject: <span class="nv">CN</span> <span class="o">=</span> ubuntu.vm
+        <span class="o">(</span>truncated<span class="o">)</span>
+</code></pre></div>
+
+<p>Note that the <code>Issuer</code> and <code>Subject</code> are the same, meaning it is a self-signed certificate.</p>
+<p>Now that the <code>ssl</code> module and the <code>default-ssl</code> site are enabled, reload Apache to account for the changes:</p>
+<div class="highlight"><pre><span></span><code><span class="o">$</span><span class="w"> </span><span class="n">sudo</span><span class="w"> </span><span class="n">systemctl</span><span class="w"> </span><span class="n">reload</span><span class="w"> </span><span class="n">apache2</span><span class="w"></span>
+</code></pre></div>
+
+<p>Now we can test the HTTPS site using <code>curl</code>. The <code>CN</code> on the <code>ssl-cert-snakeoil.pem</code> certificate should be the FQDN of your server- it is important that the <code>CN</code> or <code>Subject Alternate Name</code> on the certificate match the URL, or curl will fail to verify the certificate. You can run the following commands to extract it as a shell variable and use it to connect to the site over HTTPS:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nv">HOST</span><span class="o">=</span><span class="k">$(</span>openssl x509 -in /etc/ssl/certs/ssl-cert-snakeoil.pem -text <span class="p">|</span> grep <span class="s2">&quot;Subject: CN&quot;</span> <span class="p">|</span> awk <span class="s1">&#39;{print $4}&#39;</span><span class="k">)</span>
+$ curl --cacert /etc/ssl/certs/ssl-cert-snakeoil.pem https://<span class="nv">$HOST</span>
+This is served over HTTPS!
+</code></pre></div>
+
+<p>If the DNS name does not resolve, try using the <code>--resolve</code> option with curl, which allows you to map that hostname to localhost:</p>
+<div class="highlight"><pre><span></span><code>$ curl --cacert /etc/ssl/certs/ssl-cert-snakeoil.pem --resolve <span class="nv">$HOST</span>:443:127.0.0.1 https://<span class="nv">$HOST</span>
+This is served over HTTPS!
+</code></pre></div>
+
+<p>Note, in both commands, we used the <code>--cacert</code> flag to specify the certificate file <code>curl</code> should use to verify the peer, since this is a self-signed certificate, and isn't used by default. Were we to omit this, <code>curl</code> would fail with a "unknown CA" error. If you want to avoid having to do this, you can install add the self-singed certificate to the trusted certificates on the system by running the following commands:</p>
+<div class="highlight"><pre><span></span><code>$ sudo apt-get install -y ca-certificates
+$ sudo /etc/ssl/certs/ssl-cert-snakeoil.pem /usr/local/share/ca-certificates/ssl-cert-snakeoil.crt
+$ sudo update-ca-certificates
+</code></pre></div>
+
+<p>This is useful for understanding how you might configure and connect over HTTPS using self-signed certificates. However, PKIs often use a RootCA as a trusted third party- the next section shows how to set up a working example of that.</p>
+<h3>Create Custom Root CA</h3>
+<p>First, make a directory where we will store these files in your home directory and change into it. </p>
+<div class="highlight"><pre><span></span><code>mkdir ~/certs &amp;&amp; cd certs
+</code></pre></div>
+
+<p>Generate a root CA private key:</p>
+<div class="highlight"><pre><span></span><code>$ openssl genrsa -out rootCAKey.pem <span class="m">2048</span>
+</code></pre></div>
+
+<p>Create a self-signed root certificate using that key- you will be asked several questions which determine the information on the certificate and which can be whatever you'd like:</p>
+<div class="highlight"><pre><span></span><code><span class="err">$</span><span class="w"> </span><span class="n">openssl</span><span class="w"> </span><span class="n">req</span><span class="w"> </span><span class="o">-</span><span class="n">x509</span><span class="w"> </span><span class="o">-</span><span class="n">sha256</span><span class="w"> </span><span class="o">-</span><span class="k">new</span><span class="w"> </span><span class="o">-</span><span class="n">nodes</span><span class="w"> </span><span class="o">-</span><span class="k">key</span><span class="w"> </span><span class="n">rootCAKey</span><span class="p">.</span><span class="n">pem</span><span class="w"> </span><span class="o">-</span><span class="n">days</span><span class="w"> </span><span class="mi">3650</span><span class="w"> </span><span class="o">-</span><span class="k">out</span><span class="w"> </span><span class="n">rootCACert</span><span class="p">.</span><span class="n">pem</span><span class="w"></span>
+<span class="n">You</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">asked</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="n">information</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">incorporated</span><span class="w"></span>
+<span class="k">into</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">certificate</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="w"></span>
+<span class="n">What</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">what</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">called</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">Distinguished</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">DN</span><span class="p">.</span><span class="w"></span>
+<span class="n">There</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">quite</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">few</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">leave</span><span class="w"> </span><span class="ow">some</span><span class="w"> </span><span class="n">blank</span><span class="w"></span>
+<span class="k">For</span><span class="w"> </span><span class="ow">some</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="n">there</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="k">value</span><span class="p">,</span><span class="w"></span>
+<span class="k">If</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="nf">left</span><span class="w"> </span><span class="n">blank</span><span class="p">.</span><span class="w"></span>
+<span class="o">-----</span><span class="w"></span>
+<span class="n">Country</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="n">letter</span><span class="w"> </span><span class="n">code</span><span class="p">)</span><span class="w"> </span><span class="o">[</span><span class="n">AU</span><span class="o">]</span><span class="err">:</span><span class="n">US</span><span class="w"></span>
+<span class="k">State</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">Province</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="k">full</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">[</span><span class="n">Some-State</span><span class="o">]</span><span class="err">:</span><span class="k">New</span><span class="w"> </span><span class="n">York</span><span class="w"></span>
+<span class="n">Locality</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">eg</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">)</span><span class="w"> </span><span class="err">[]:</span><span class="k">New</span><span class="w"> </span><span class="n">York</span><span class="w"> </span><span class="n">City</span><span class="w"></span>
+<span class="n">Organization</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">eg</span><span class="p">,</span><span class="w"> </span><span class="n">company</span><span class="p">)</span><span class="w"> </span><span class="o">[</span><span class="n">Internet Widgits Pty Ltd</span><span class="o">]</span><span class="err">:</span><span class="ow">Some</span><span class="w"> </span><span class="n">Organization</span><span class="w"></span>
+<span class="n">Organizational</span><span class="w"> </span><span class="n">Unit</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">eg</span><span class="p">,</span><span class="w"> </span><span class="k">section</span><span class="p">)</span><span class="w"> </span><span class="err">[]:</span><span class="w"></span>
+<span class="n">Common</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">g</span><span class="p">.</span><span class="w"> </span><span class="n">server</span><span class="w"> </span><span class="n">FQDN</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">YOUR</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="err">[]:</span><span class="n">someorganization</span><span class="p">.</span><span class="n">org</span><span class="w"></span>
+<span class="n">Email</span><span class="w"> </span><span class="n">Address</span><span class="w"> </span><span class="err">[]:</span><span class="n">someone</span><span class="nv">@someorganization</span><span class="p">.</span><span class="n">org</span><span class="w"></span>
+</code></pre></div>
+
+<p>Next, we'll use the generated Root CA and key to sign a certificate used by our Apache server. Generate the private key for the Apache server with the following command:</p>
+<div class="highlight"><pre><span></span><code>$ openssl genrsa -out  my-apache-server.key <span class="m">2048</span>
+</code></pre></div>
+
+<p>In order for the CA sign the certificate, you musr present it with a certificate signing request. Run the following command to create this:</p>
+<div class="highlight"><pre><span></span><code><span class="err">$</span><span class="w"> </span><span class="n">openssl</span><span class="w"> </span><span class="n">req</span><span class="w"> </span><span class="o">-</span><span class="k">new</span><span class="w"> </span><span class="o">-</span><span class="k">key</span><span class="w"> </span><span class="n">my</span><span class="o">-</span><span class="n">apache</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="k">key</span><span class="w"> </span><span class="o">-</span><span class="k">out</span><span class="w"> </span><span class="n">my</span><span class="o">-</span><span class="n">apache</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">csr</span><span class="w"></span>
+<span class="n">You</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">asked</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="n">information</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">incorporated</span><span class="w"></span>
+<span class="k">into</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">certificate</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="w"></span>
+<span class="n">What</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">what</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">called</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">Distinguished</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">DN</span><span class="p">.</span><span class="w"></span>
+<span class="n">There</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">quite</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">few</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">leave</span><span class="w"> </span><span class="ow">some</span><span class="w"> </span><span class="n">blank</span><span class="w"></span>
+<span class="k">For</span><span class="w"> </span><span class="ow">some</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="n">there</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="k">value</span><span class="p">,</span><span class="w"></span>
+<span class="k">If</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">field</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="nf">left</span><span class="w"> </span><span class="n">blank</span><span class="p">.</span><span class="w"></span>
+<span class="o">-----</span><span class="w"></span>
+<span class="n">Country</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="n">letter</span><span class="w"> </span><span class="n">code</span><span class="p">)</span><span class="w"> </span><span class="o">[</span><span class="n">AU</span><span class="o">]</span><span class="err">:</span><span class="n">US</span><span class="w"></span>
+<span class="k">State</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">Province</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="k">full</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">[</span><span class="n">Some-State</span><span class="o">]</span><span class="err">:</span><span class="k">New</span><span class="w"> </span><span class="n">York</span><span class="w"></span>
+<span class="n">Locality</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">eg</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">)</span><span class="w"> </span><span class="err">[]:</span><span class="k">New</span><span class="w"> </span><span class="n">York</span><span class="w"> </span><span class="n">City</span><span class="w"></span>
+<span class="n">Organization</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">eg</span><span class="p">,</span><span class="w"> </span><span class="n">company</span><span class="p">)</span><span class="w"> </span><span class="o">[</span><span class="n">Internet Widgits Pty Ltd</span><span class="o">]</span><span class="err">:</span><span class="ow">Some</span><span class="w"> </span><span class="n">Other</span><span class="w"> </span><span class="n">Organization</span><span class="w"></span>
+<span class="n">Organizational</span><span class="w"> </span><span class="n">Unit</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">eg</span><span class="p">,</span><span class="w"> </span><span class="k">section</span><span class="p">)</span><span class="w"> </span><span class="err">[]:</span><span class="w"></span>
+<span class="n">Common</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">g</span><span class="p">.</span><span class="w"> </span><span class="n">server</span><span class="w"> </span><span class="n">FQDN</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">YOUR</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="err">[]:</span><span class="n">ubuntu</span><span class="p">.</span><span class="n">vm</span><span class="w"></span>
+<span class="n">Email</span><span class="w"> </span><span class="n">Address</span><span class="w"> </span><span class="err">[]:</span><span class="n">someone</span><span class="nv">@someotherorganization</span><span class="p">.</span><span class="n">org</span><span class="w"></span>
+
+<span class="n">Please</span><span class="w"> </span><span class="n">enter</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">following</span><span class="w"> </span><span class="s1">&#39;extra&#39;</span><span class="w"> </span><span class="n">attributes</span><span class="w"></span>
+<span class="k">to</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">sent</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">your</span><span class="w"> </span><span class="n">certificate</span><span class="w"> </span><span class="n">request</span><span class="w"></span>
+<span class="n">A</span><span class="w"> </span><span class="n">challenge</span><span class="w"> </span><span class="n">password</span><span class="w"> </span><span class="err">[]:</span><span class="w"></span>
+<span class="n">An</span><span class="w"> </span><span class="n">optional</span><span class="w"> </span><span class="n">company</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="err">[]:</span><span class="w"></span>
+</code></pre></div>
+
+<p>Again, for the purpose of this tutorial, the organization information can be whatever you'd like. However since this is the certificate of the server to which we'll be connecting, ensure the <code>CN</code> is the DNS name of your server (i.e the $HOST variable from earlier).</p>
+<p>Finally, sign the certificate using the root CA's certificate and private key.</p>
+<div class="highlight"><pre><span></span><code>$ openssl x509 -req -days <span class="m">365</span> -in my-apache-server.csr -CA rootCACert.pem -CAkey rootCAKey.pem -CAcreateserial -out my-apache-server.crt
+Signature ok
+<span class="nv">subject</span><span class="o">=</span><span class="nv">C</span> <span class="o">=</span> US, <span class="nv">ST</span> <span class="o">=</span> New York, <span class="nv">L</span> <span class="o">=</span> New York City, <span class="nv">O</span> <span class="o">=</span> Some Other Organization, <span class="nv">CN</span> <span class="o">=</span> ubuntu.vm, <span class="nv">emailAddress</span> <span class="o">=</span> someone@someotherorganization.org
+Getting CA Private Key
+</code></pre></div>
+
+<p>Now that we have the server certificate and private key, modify the <code>/etc/apache2/sites-available/default-ssl.conf</code> to change the paths to point to these files:</p>
+<div class="highlight"><pre><span></span><code>SSLCertificateFile /home/&lt;YOUR_USER&gt;/certs/my-apache-server.crt
+SSLCertificateKeyFile /home/&lt;YOUR_USER&gt;/certs/my-apache-server.key
+</code></pre></div>
+
+<p>Verify the syntax is okay and reload Apache:</p>
+<div class="highlight"><pre><span></span><code><span class="o">$</span><span class="w"> </span><span class="n">sudo</span><span class="w"> </span><span class="n">apachectl</span><span class="w"> </span><span class="o">-</span><span class="n">t</span><span class="w"></span>
+<span class="n">Syntax</span><span class="w"> </span><span class="n">OK</span><span class="w"></span>
+<span class="o">$</span><span class="w"> </span><span class="n">sudo</span><span class="w"> </span><span class="n">systemctl</span><span class="w"> </span><span class="n">reload</span><span class="w"> </span><span class="n">apache2</span><span class="w"></span>
+</code></pre></div>
+
+<p>Now, you can use the root CA certificate to verify the Apache server's certificate when connecting to the site:</p>
+<div class="highlight"><pre><span></span><code>$ curl --cacert ~/certs/rootCACert.pem https://<span class="nv">$HOST</span>
+This is served over HTTPS!
+</code></pre></div>
+
+<p>As before, if you'd like to avoid having to use the <code>--cacert</code> flag, you can add the custom root certificate to the trusted certificates on the system. For a more detailed look at the certificate validation process, run curl with the <code>-v</code> flag.</p>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/networking.html">networking</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/networking.html">#networking</a>
+          <a class="text-reset" href="./tag/linux.html">#linux</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

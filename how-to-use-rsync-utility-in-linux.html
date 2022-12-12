@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - How to Use rsync Utility in Linux</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="linux" />
+    <meta name="tags" content="networking" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./how-to-use-rsync-utility-in-linux.html" rel="bookmark"
+         title="Permalink to How to Use rsync Utility in Linux">How to Use rsync Utility in Linux</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-12-04T00:00:00-05:00">
+      Sun 04 December 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p><code>rsync</code> is a versatile and feature-rich copying utility which can be used for many purposes including copying data to and from a remote server and generating backups. <code>rsync</code> is known for its use of a delta-transfer algorithm, meaning it copies only those files which have changed between a given source and destination directory. This improves efficiency and reduces the overall amount of data processed locally or sent over the network.</p>
+<p>The general syntax of <code>rsync</code> is as follows:</p>
+<div class="highlight"><pre><span></span><code>rsync <span class="o">[</span>OPTIONS<span class="o">]</span> &lt;SOURCE&gt; &lt;DESTINATION&gt;
+</code></pre></div>
+
+<p>In its most basic form, <code>rsync</code> can be used to copying a file to a destination within a given same server with a syntax similar to <code>cp</code>:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">echo</span> <span class="nb">test</span> &gt; test.txt
+$ rsync test.txt /tmp/   
+$ cat /tmp/test.txt
+<span class="nb">test</span>
+</code></pre></div>
+
+<p>To copy recursively, use the <code>-r</code> option.</p>
+<div class="highlight"><pre><span></span><code>$ mkdir <span class="nb">test</span>
+$ touch test/file<span class="o">{</span><span class="m">0</span>..10<span class="o">}</span>
+$ ls <span class="nb">test</span>
+file0   file1   file10  file2   file3   file4   file5   file6   file7   file8   file9
+$ rsync -r <span class="nb">test</span> /tmp      
+$ ls /tmp
+<span class="nb">test</span>
+</code></pre></div>
+
+<p>Important to note is that this copies the source directory <code>test</code> as a <em>subfolder</em> of the destination. To ignore the source directory and recursively copy only the files and subdirectories in the source directory to the destination directory, add a trailing slash.</p>
+<div class="highlight"><pre><span></span><code>$ rsync -r test/ /tmp
+$ ls /tmp 
+file0   file1   file10  file2   file3   file4   file5   file6   file7   file8   file9   <span class="nb">test</span>
+</code></pre></div>
+
+<p>To copy files from or to a remote server, you need to use a syntax similar to remote shell.</p>
+<div class="highlight"><pre><span></span><code>rsync <span class="o">[</span>OPTIONS<span class="o">]</span> &lt;SOURCE&gt; &lt;USERNAME&gt;@&lt;REMOTE_HOST&gt;:&lt;DESTINATION&gt;
+</code></pre></div>
+
+<p>The following <code>rsync</code> command copies a local file to the home directory on a remote server:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">echo</span> <span class="nb">test</span> &gt; test.txt
+$ rsync test.txt ubuntu@192.168.1.155:~
+$ ssh ubuntu@192.168.1.155
+ubuntu@ubuntu:~$ ls
+ubuntu@ubuntu:~$ cat test.txt 
+<span class="nb">test</span>
+</code></pre></div>
+
+<p>You can copy the file back by reversing the source and destination.</p>
+<div class="highlight"><pre><span></span><code>$ rsync ubuntu@192.168.1.155:~/test.txt test.copy.txt
+$ ls
+test.copy.txt   test.txt
+</code></pre></div>
+
+<h2>Notable options</h2>
+<p>Three options you often see used together with <code>rsync</code> are <code>-azv</code>. The <code>--archive</code> (<code>-a</code>) option is a shortcut to <code>-rlptgoD</code> and is commonly used as it copies recursively, copies symlinks, and preserves metadata on files, such as owner and modification times. Another common flag is <code>--verbose</code> (<code>-v</code>) which increases verbosity and prints information surrounding which files are being transferred and summary of the data transfer. <code>-z</code> compress the files, reducing the total amount of data transferred and improve speed.</p>
+<p>When recursively copying, you may wish to specify which directories or files should be including in the operation. This can be done using the <code>--include</code> and <code>--exclude</code> flags along with a pattern matching the target files.</p>
+<div class="highlight"><pre><span></span><code><span class="n">$</span><span class="w"> </span><span class="n">mkdir</span><span class="w"> </span><span class="n">test</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span><span class="n">touch</span><span class="w"> </span><span class="n">test</span><span class="o">/</span><span class="n">file</span><span class="p">{</span><span class="mf">0..5</span><span class="p">}</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span><span class="n">rsync</span><span class="w"> </span><span class="o">-</span><span class="n">azv</span><span class="w"> </span><span class="o">--</span><span class="n">exclude</span><span class="w"> </span><span class="err">&#39;</span><span class="o">*</span><span class="mi">0</span><span class="err">&#39;</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="n">ubuntu</span><span class="mf">@192.168.1.155</span><span class="o">:~</span><span class="w"></span>
+<span class="n">building</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">done</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file1</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file2</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file3</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file4</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file5</span><span class="w"></span>
+
+<span class="n">sent</span><span class="w"> </span><span class="mi">335</span><span class="w"> </span><span class="n">bytes</span><span class="w">  </span><span class="n">received</span><span class="w"> </span><span class="mi">136</span><span class="w"> </span><span class="n">bytes</span><span class="w">  </span><span class="mf">62.80</span><span class="w"> </span><span class="n">bytes</span><span class="o">/</span><span class="n">sec</span><span class="w"></span>
+<span class="n">total</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="n">speedup</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mf">0.00</span><span class="w"></span>
+</code></pre></div>
+
+<p><code>--dry-run</code> will run through all actions to be taken, without actually performing those actions. This is useful for understanding what files will be copied given the command structure, for example:</p>
+<div class="highlight"><pre><span></span><code>$ rsync -av --dry-run test/file<span class="o">[</span><span class="m">1</span>-2<span class="o">]</span> ubuntu@192.168.1.155:~/
+building file list ... <span class="k">done</span>
+file1
+file2
+
+sent <span class="m">106</span> bytes  received <span class="m">32</span> bytes  <span class="m">9</span>.52 bytes/sec
+total size is <span class="m">0</span>  speedup is <span class="m">0</span>.00
+</code></pre></div>
+
+<p>Rsync connects to remote servers using SSH by default and can support specific SSH options with the <code>--rsh</code> (<code>-e</code>) flag. The <code>--rsh</code> flag allows you to customize the remote shell command with additional options, or use a different remote shell program altogether. For example, here is how to specify the port the remote server's <code>sshd</code> daemon is listening on.</p>
+<div class="highlight"><pre><span></span><code>rsync -e <span class="s1">&#39;ssh -p 22200&#39;</span> test/ ubuntu@192.168.1.155:~/
+</code></pre></div>
+
+<p>As file transfers can take time to complete, using the <code>--progress</code> flag will show the data transfer progress for each file:</p>
+<div class="highlight"><pre><span></span><code>rsync -rzv --progress <span class="nb">test</span> ubuntu@192.168.1.155:~
+building file list ... 
+<span class="m">12</span> files to consider
+test/
+test/file0
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#1, to-check<span class="o">=</span><span class="m">10</span>/12<span class="o">)</span>
+test/file1
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#2, to-check<span class="o">=</span><span class="m">9</span>/12<span class="o">)</span>
+test/file10
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#3, to-check<span class="o">=</span><span class="m">8</span>/12<span class="o">)</span>
+test/file2
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#4, to-check<span class="o">=</span><span class="m">7</span>/12<span class="o">)</span>
+test/file3
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#5, to-check<span class="o">=</span><span class="m">6</span>/12<span class="o">)</span>
+test/file4
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#6, to-check<span class="o">=</span><span class="m">5</span>/12<span class="o">)</span>
+test/file5
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#7, to-check<span class="o">=</span><span class="m">4</span>/12<span class="o">)</span>
+test/file6
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#8, to-check<span class="o">=</span><span class="m">3</span>/12<span class="o">)</span>
+test/file7
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#9, to-check<span class="o">=</span><span class="m">2</span>/12<span class="o">)</span>
+test/file8
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#10, to-check<span class="o">=</span><span class="m">1</span>/12<span class="o">)</span>
+test/file9
+           <span class="m">0</span> <span class="m">100</span>%    <span class="m">0</span>.00kB/s    <span class="m">0</span>:00:00 <span class="o">(</span>xfer#11, to-check<span class="o">=</span><span class="m">0</span>/12<span class="o">)</span>
+
+sent <span class="m">572</span> bytes  received <span class="m">268</span> bytes  <span class="m">152</span>.73 bytes/sec
+total size is <span class="m">0</span>  speedup is <span class="m">0</span>.00
+</code></pre></div>
+
+<p>For cases where you want to delete the source files after a succesful transfer, you can use the <code>--remove-source-files</code>.</p>
+<div class="highlight"><pre><span></span><code>$ rsync -rv --remove-source-files test/ ubuntu@192.168.1.155:~
+building file list ... <span class="k">done</span>
+file0
+file1
+file10
+file2
+file3
+file4
+file5
+file6
+file7
+file8
+file9
+
+sent <span class="m">594</span> bytes  received <span class="m">262</span> bytes  <span class="m">131</span>.69 bytes/sec
+total size is <span class="m">0</span>  speedup is <span class="m">0</span>.00
+$ ls test/
+$ 
+</code></pre></div>
+
+<p>As mentioned at the start of this post, of the most important distinctions of the <code>rsync</code> utility is which can be seen in the following example. Notice in the second transfer that only <code>file6</code> is sent over the network.</p>
+<div class="highlight"><pre><span></span><code><span class="n">$</span><span class="w"> </span><span class="n">mkdir</span><span class="w"> </span><span class="n">test</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span><span class="n">touch</span><span class="w"> </span><span class="n">test</span><span class="o">/</span><span class="n">file</span><span class="p">{</span><span class="mf">0..5</span><span class="p">}</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span><span class="n">rsync</span><span class="w"> </span><span class="o">-</span><span class="n">azv</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="n">ubuntu</span><span class="mf">@192.168.1.188</span><span class="o">:~</span><span class="w"> </span>
+<span class="n">building</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">done</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file0</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file1</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file2</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file3</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file4</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file5</span><span class="w"></span>
+
+<span class="n">sent</span><span class="w"> </span><span class="mi">382</span><span class="w"> </span><span class="n">bytes</span><span class="w">  </span><span class="n">received</span><span class="w"> </span><span class="mi">158</span><span class="w"> </span><span class="n">bytes</span><span class="w">  </span><span class="mf">83.08</span><span class="w"> </span><span class="n">bytes</span><span class="o">/</span><span class="n">sec</span><span class="w"></span>
+<span class="n">total</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="n">speedup</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mf">0.00</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span><span class="n">touch</span><span class="w"> </span><span class="n">test</span><span class="o">/</span><span class="n">file6</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span><span class="n">rsync</span><span class="w"> </span><span class="o">-</span><span class="n">azv</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="n">ubuntu</span><span class="mf">@192.168.1.188</span><span class="o">:~</span><span class="w"></span>
+<span class="n">building</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">done</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="w"></span>
+<span class="n">test</span><span class="o">/</span><span class="n">file6</span><span class="w"></span>
+
+<span class="n">sent</span><span class="w"> </span><span class="mi">203</span><span class="w"> </span><span class="n">bytes</span><span class="w">  </span><span class="n">received</span><span class="w"> </span><span class="mi">48</span><span class="w"> </span><span class="n">bytes</span><span class="w">  </span><span class="mf">45.64</span><span class="w"> </span><span class="n">bytes</span><span class="o">/</span><span class="n">sec</span><span class="w"></span>
+<span class="n">total</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="n">speedup</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mf">0.00</span><span class="w"></span>
+<span class="n">$</span><span class="w"> </span>
+</code></pre></div>
+
+<p>As shown above, the <code>rsync</code> utility is a powerful tool for Linux users and can serve many purposes related to data transfer. This guide has shown some core workflows as a starting point, though are many additional options and functions which can be explored further by consulting the <code>rsync</code> <code>man</code> page.</p>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/linux.html">linux</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/linux.html">#linux</a>
+          <a class="text-reset" href="./tag/networking.html">#networking</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

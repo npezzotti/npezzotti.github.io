@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - How to use scp Utility in Linux</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="linux" />
+    <meta name="tags" content="networking" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./how-to-use-scp-utility-in-linux.html" rel="bookmark"
+         title="Permalink to How to use scp Utility in Linux">How to use scp Utility in Linux</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-12-04T00:00:00-05:00">
+      Sun 04 December 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>SCP (secure copy protocol) is a file transfer protocol which allows you to copy files between hosts on a network over an SSH connection. It supports the same authentication and encryption mechanisms as SSH and is a secure way to move files on the network.</p>
+<p>The basic syntax is <code>scp [options] source target</code>, where source is the file is the file to be copied and target is its destination. One common usage is to copy files between a local computer and a remote server. To copy a file from your local computer to the remote server, place the local path as the first argument:</p>
+<div class="highlight"><pre><span></span><code>scp /path/to/local-file &lt;REMOTE_USER&gt;@&lt;REMOTE_HOST&gt;:/path/to/remote-copy
+</code></pre></div>
+
+<p>To copy a file from the remote server to your local computer, place the connectino details and remote path as the first argument:</p>
+<div class="highlight"><pre><span></span><code>scp &lt;REMOTE_USER&gt;@&lt;REMOTE_HOST&gt;:/path/to/remote-file /path/to/local-copy
+</code></pre></div>
+
+<p>To recurively copy directories, use the <code>-r</code> flag:</p>
+<div class="highlight"><pre><span></span><code><span class="n">$</span><span class="w"> </span><span class="n">mkdir</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="n">test</span><span class="o">/</span><span class="n">test</span><span class="w">                                                    </span>
+<span class="n">$</span><span class="w"> </span><span class="n">echo</span><span class="w"> </span><span class="n">hello</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">test</span><span class="o">/</span><span class="n">test</span><span class="o">/</span><span class="n">hello</span><span class="w">                                              </span>
+<span class="n">$</span><span class="w"> </span><span class="n">scp</span><span class="w"> </span><span class="o">-</span><span class="n">i</span><span class="w"> </span><span class="p">.</span><span class="n">ssh</span><span class="o">/</span><span class="n">nathan</span><span class="o">-</span><span class="n">lab</span><span class="o">-</span><span class="n">key</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="n">ubuntu</span><span class="mf">@44.203.149.231</span><span class="o">:</span><span class="n">test</span><span class="w">             </span>
+</code></pre></div>
+
+<p>The default authentication is password authentication and requires the SSH daemon permit that with the <code>PasswordAuthentication yes</code> setting. <code>scp</code> also supports oth ssh authentication mechanisms, such as SSH keys. You can use the <code>-i</code> flag to provide the path to your private key to authenticate:</p>
+<div class="highlight"><pre><span></span><code>scp -i private-key.pem /path/to/local-file &lt;REMOTE_USER&gt;@&lt;REMOTE_HOST&gt;:/path/to/remote-copy
+</code></pre></div>
+
+<p>If the remote server's SSH daemon is listening on a a port other than <code>22</code>, provide the <code>-P</code> flag:</p>
+<div class="highlight"><pre><span></span><code>scp -P 2200 -i private-key.pem /path/to/local-file &lt;REMOTE_USER&gt;@&lt;REMOTE_HOST&gt;:/path/to/remote-copy
+</code></pre></div>
+
+<p>scp also supports copying files between two remote hosts by adding additional of connection details before either the source or destination path:</p>
+<div class="highlight"><pre><span></span><code>scp &lt;REMOTE_USER&gt;@&lt;REMOTE_HOST_1&gt;:/path/to/remote-file &lt;REMOTE_USER&gt;@&lt;REMOTE_HOST_2&gt;:/path/to/remote-copy
+</code></pre></div>
+
+<p>Adding the <code>-3</code> flag to the command above would force the data transfer to happen through your local computer, rather than directly between the two remote hosts.</p>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/linux.html">linux</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/linux.html">#linux</a>
+          <a class="text-reset" href="./tag/networking.html">#networking</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - Bash Script to Compress Log Files</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="linux" />
+    <meta name="tags" content="programming" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./bash-script-to-compress-log-files.html" rel="bookmark"
+         title="Permalink to Bash Script to Compress Log Files">Bash Script to Compress Log Files</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-09-17T00:00:00-04:00">
+      Sat 17 September 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>This post shows an example of a bash script which compresses all files matching a pattern in a given directory. It can be used as a cron job or one-off to rotate growing log files on a server. The <code>logrotate</code> program is a better candidate for this in real world situations, but this was a fun exercise in scripting and could be useful in some scenarios.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+
+<span class="c1">#################################################</span>
+<span class="c1"># Compresses files over 10M in a given directory.</span>
+<span class="c1">#################################################</span>
+
+<span class="nb">set</span> -e
+
+display_usage<span class="o">()</span> 
+<span class="o">{</span>
+        <span class="nb">echo</span> <span class="s2">&quot;Usage: </span><span class="k">$(</span>basename <span class="nv">$0</span><span class="k">)</span><span class="s2"> &lt;directory&gt; [&lt;file_pattern&gt;]&quot;</span>
+<span class="o">}</span>
+
+<span class="k">if</span> <span class="o">[</span> <span class="nv">$UID</span> -ne <span class="m">0</span> <span class="o">]</span>
+<span class="k">then</span>
+    <span class="nb">echo</span> <span class="s2">&quot;This script must be run as root.&quot;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+    <span class="nb">exit</span> <span class="m">1</span>
+<span class="k">fi</span>
+
+<span class="k">if</span> <span class="o">[</span> <span class="nv">$#</span> -lt <span class="m">1</span> <span class="o">]</span>
+<span class="k">then</span>
+    display_usage
+    <span class="nb">exit</span> <span class="m">1</span>
+<span class="k">fi</span>
+
+<span class="nv">DIR</span><span class="o">=</span><span class="nv">$1</span>
+<span class="nv">FILE_SIZE</span><span class="o">=</span><span class="s2">&quot;10M&quot;</span>
+<span class="nv">PATTERN</span><span class="o">=</span><span class="nv">$2</span>
+
+<span class="nv">FILES</span><span class="o">=</span><span class="k">$(</span>find <span class="si">${</span><span class="nv">DIR</span><span class="si">}</span> -type f -size <span class="si">${</span><span class="nv">FILE_SIZE</span><span class="si">}</span> -regex <span class="si">${</span><span class="nv">PATTERN</span><span class="k">:-</span><span class="p">.*</span><span class="se">\/</span><span class="p">.*</span><span class="se">\.</span><span class="nv">log</span><span class="si">}</span><span class="k">)</span>
+
+<span class="k">for</span> file <span class="k">in</span> <span class="si">${</span><span class="nv">FILES</span><span class="p">[@]</span><span class="si">}</span>
+<span class="k">do</span>
+    <span class="nb">echo</span> <span class="s2">&quot;</span><span class="k">$(</span>date <span class="s2">&quot;+%F %T %Z&quot;</span><span class="k">)</span><span class="s2">: compressing </span><span class="si">${</span><span class="nv">file</span><span class="si">}</span><span class="s2">...&quot;</span>
+
+    <span class="nv">INDEX</span><span class="o">=</span><span class="m">1</span>
+    <span class="k">while</span> <span class="o">[</span> -f <span class="si">${</span><span class="nv">file</span><span class="si">}</span>.<span class="si">${</span><span class="nv">INDEX</span><span class="si">}</span>.gz <span class="o">]</span>
+    <span class="k">do</span>
+        <span class="o">((</span>INDEX++<span class="o">))</span>
+    <span class="k">done</span>
+
+    gzip -k -S .<span class="si">${</span><span class="nv">INDEX</span><span class="si">}</span>.gz <span class="si">${</span><span class="nv">file</span><span class="si">}</span>
+    cat /dev/null &gt; <span class="si">${</span><span class="nv">file</span><span class="si">}</span>
+<span class="k">done</span>
+</code></pre></div>
+
+<h3>Explanation of code:</h3>
+<ul>
+<li><em>Line 1:</em> this is a shebang, which tells the kernel which program to use to execute the contents of the script- in this case, <code>/bin/bash</code>.</li>
+<li><em>Lines 3-5:</em> a comment declaring the purpose of the script.</li>
+<li><em>Line 7:</em> modifies the shell behavior to make sure the script exits if any command exits with an error.</li>
+<li><em>Lines 9-12:</em> a bash function which prints instructions on using the script. The <code>echo</code> command prints the name of the script with arguments. <code>$0</code> returns the absolute path to the script. <code>basename</code> modifes this path so that only the file name is returned. This way, only the name of the file is printed no matter which directory the script is run from.</li>
+<li><em>Lines 14-18:</em> check to see if the user executing the script is running it as root or with superuser privileges. To do this, we check if the <code>$UID</code> variable, a shell variable which stores the ID of the user, is equal to 0 (root user ID).</li>
+<li><em>Lines 20-24:</em> check to see that the user supplied at least 1 argument- if not, display the usage and exit. <code>$#</code> is a shell variable which returns the number of arguments supplied to a script.</li>
+<li><em>Line 26:</em> set a <code>DIR</code> variable as the first argument provided to the script. This is the directory where the script will look for files.</li>
+<li><em>Line 27:</em> set a <code>FILE_SIZE</code> variable to 10 megabytes. The script will only compress files of that size or greater. This is a good size at which to rotate a file, but it can be adjusted if needed.</li>
+<li><em>Line 28:</em> set a <code>PATTERN</code> variable as the second argument provided to the script. This is a shell pattern used to match the target files.</li>
+<li><em>Line 30:</em> use the <code>find</code> utility to collect all files and save it as an array. The <code>$DIR</code> variable is provided as the first argument , the starting directory from which files will be recursively searched. The <code>-type f</code> argument indicates that the command should only look for files. <code>-size</code> constrains the command to only return files which a size greater than <code>$FILE_SIZE</code> (<code>10M</code>). The <code>-regex</code> argument takes a regex to further filter which files are returned. This uses a feature of brace expansion which sets a default value (<code>.*\/.*\.log</code>) assuming the user did not provide a second argument (and <code>$PATTERN</code> is empty). The full command is enclosed in parenthesis and a leading <code>$</code>, also know as command substitution, which will allow the output of the command to be saved in the variable.</li>
+<li><em>Lines 32-44:</em> this is a bash for loop, used to iterate over the <code>$FILES</code> array (all the files returned by the find command). <code>${&lt;ARRAY&gt;[@]}</code> returns all values in the array.</li>
+<li><em>Line 34:</em> print a log with the current date and time and which file is going to be compressed.</li>
+<li><em>Lines 36-40:</em> this is a while loop in which we determine the name of the compressed file. The file name should be <code>&lt;FILE_NAME&gt;.&lt;NUM_TIMES_COMPRESSED&gt;.gz</code>. Assuming the file has already been compressed, we want the <code>&lt;NUM_TIMES_COMPRESSED&gt;</code> to increment. To do this we set an <code>INDEX</code> shell variable to 1 and add a  while loop condition which checks to see if a file exists with that index (i.e <code>&lt;FILE_NAME&gt;.1.gz</code>). If it does, the value of <code>INDEX</code> is incremented and the while condition is run again. This code will continue to run until a file with that name does not exist.</li>
+<li><em>Line 42:</em> compress the file with gzip. The <code>-k</code> option keeps the original file, which would be deleted by default. The <code>-S</code> option is the suffix of the compressed file, the name determined in the last few lines.</li>
+<li><em>Line 43:</em> empty the file by running <code>cat</code> on <code>/dev/null</code> and redirecting the output to the file. <code>/dev/null</code> is a special file on Linux systems which discards anything your write to it and returns <code>EOF</code> when read from. It is often used to discard output streams, but can also be used to empty a file, as shown here.</li>
+</ul>
+<p>To test this script, you can create a logs directory and use <code>dd</code> to create some sample files over 10 megabytes in size:</p>
+<div class="highlight"><pre><span></span><code>$ dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>logs/my-app.log  <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span>  <span class="nv">count</span><span class="o">=</span><span class="m">10240</span>
+<span class="m">10240</span>+0 records <span class="k">in</span>
+<span class="m">10240</span>+0 records out
+<span class="m">10485760</span> bytes <span class="o">(</span><span class="m">10</span> MB, <span class="m">10</span> MiB<span class="o">)</span> copied, <span class="m">0</span>.0279485 s, <span class="m">375</span> MB/s
+$ touch logs/my-app.log.1.gz
+$ dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>logs/more-logs/my-app.log  <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span>  <span class="nv">count</span><span class="o">=</span><span class="m">10240</span>
+<span class="m">10240</span>+0 records <span class="k">in</span>
+<span class="m">10240</span>+0 records out
+<span class="m">10485760</span> bytes <span class="o">(</span><span class="m">10</span> MB, <span class="m">10</span> MiB<span class="o">)</span> copied, <span class="m">0</span>.0415605 s, <span class="m">252</span> MB/s
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code>$ sudo ./rotate.sh logs/ .*/my-app.log
+<span class="m">2022</span>-09-18 <span class="m">20</span>:38:36 UTC: compressing logs/my-app.log...
+<span class="m">2022</span>-09-18 <span class="m">20</span>:38:36 UTC: compressing logs/more-logs/my-app.log...
+$ ls logs/ logs/more-logs/
+logs/:
+more-logs  my-app.log  my-app.log.1.gz  my-app.log.2.gz
+
+logs/more-logs/:
+my-app.log  my-app.log.1.gz
+</code></pre></div>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/linux.html">linux</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/linux.html">#linux</a>
+          <a class="text-reset" href="./tag/programming.html">#programming</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>

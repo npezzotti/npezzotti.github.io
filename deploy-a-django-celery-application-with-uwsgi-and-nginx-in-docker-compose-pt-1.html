@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Nathan's Blog - Deploy a Django Celery Application with uWSGI and Nginx in Docker Compose (Pt. 1)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Pelican" />
+
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="devops" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" type="text/css" href="./theme/css/styles.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3FX2ZBGRZ5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3FX2ZBGRZ5');
+</script>
+
+<body class="d-flex flex-column min-vh-100">
+  <nav id="menu" class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand ms-5" href="./">Nathan's Blog</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-5">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/categories">Posts</a></li>
+          <li>
+            <a class="nav-link" href="./pages/about.html">About</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav><!-- /#menu -->
+  <div class="container-fluid p-4">
+<section class="container p-3 rounded">
+  <div>
+    <h2 class="title">
+      <a class="text-reset text-decoration-none" href="./deploy-a-django-celery-application-with-uwsgi-and-nginx-in-docker-compose-pt-1.html" rel="bookmark"
+         title="Permalink to Deploy a Django Celery Application with uWSGI and Nginx in Docker Compose (Pt. 1)">Deploy a Django Celery Application with uWSGI and Nginx in Docker Compose (Pt. 1)</a></h2>
+ 
+  </div>
+  <div class="post-info">
+    <time class="fw-light" datetime="2022-10-04T00:00:00-04:00">
+      Tue 04 October 2022
+    </time>
+    <address class="vcard author">
+      By           <a class="text-reset" href="./author/nathan-pezzotti.html">Nathan Pezzotti</a>
+    </address>
+  </div><!-- /.post-info -->
+  </br>
+  <div class="entry-content">
+    <p>This application is a basic authentication system which sends a welcome email user Celery whenever a new user registers. Part one goes over building the application and running it locally, and part two covers deploying the app in Docker Compose.</p>
+<h2>What is Celery</h2>
+<p>Celery is a Python library which operates as a task queue. It allows you perform work outside of the HTTP request-response cycle, such as processing user input, connecting to a third-party API, or sending emails (as shown in this project) without blocking the end user from continuing to use the site. When using Celery, you will define units of work known as tasks, which are then executed asyncronously by Celery worker processes.</p>
+<h2>Getting started</h2>
+<p>Make a project directory and change into it:</p>
+<div class="highlight"><pre><span></span><code>$ mkdir django-celery-app <span class="o">&amp;&amp;</span> <span class="nb">cd</span> django-celery-app
+</code></pre></div>
+
+<p>Start a virtual environment (substitute python3 for the path to your Python 3 interpreter):</p>
+<div class="highlight"><pre><span></span><code>$ python3 -m venv .env
+</code></pre></div>
+
+<p>Start the virtual environment:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">source</span> .env/bin/activate
+</code></pre></div>
+
+<p>Install Django:</p>
+<div class="highlight"><pre><span></span><code>(.env) $ python -m pip install -U pip django
+</code></pre></div>
+
+<p>Create new project called django:</p>
+<div class="highlight"><pre><span></span><code>(.env) $ django-admin startproject django_celery_app &amp;&amp; cd django_celery_app
+</code></pre></div>
+
+<p>Verify the installation is working by starting the Django server and loading the default page in your browser at <code>http://localhost:8080</code>:</p>
+<div class="highlight"><pre><span></span><code>(.env) $ python manage.py runserver
+</code></pre></div>
+
+<p>Start a Django app which will be used for managing users:</p>
+<div class="highlight"><pre><span></span><code>(.env) $ python manage.py startapp accounts
+</code></pre></div>
+
+<p>Add the app to your installed apps:</p>
+<div class="highlight"><pre><span></span><code>INSTALLED_APPS = [
+    &quot;django.contrib.admin&quot;,
+    &quot;django.contrib.auth&quot;,
+    &quot;django.contrib.contenttypes&quot;,
+    &quot;django.contrib.sessions&quot;,
+    &quot;django.contrib.messages&quot;,
+    &quot;django.contrib.staticfiles&quot;,
+    &quot;accounts&quot;,
+]
+</code></pre></div>
+
+<p>Edit the accounts/models.py file to add a <code>DjangoCeleryAppUser</code> model:</p>
+<div class="highlight"><pre><span></span><code><span class="o">...</span>
+<span class="kn">from</span> <span class="nn">django.contrib.auth.models</span> <span class="kn">import</span> <span class="n">AbstractUser</span>
+
+
+<span class="k">class</span> <span class="nc">DjangoCeleryAppUser</span><span class="p">(</span><span class="n">AbstractUser</span><span class="p">):</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">EmailField</span><span class="p">(</span><span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">USERNAME_FIELD</span> <span class="o">=</span> <span class="s1">&#39;email&#39;</span>
+    <span class="n">REQUIRED_FIELDS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">email</span>
+</code></pre></div>
+
+<p>This models represents a custom user for the <code>django-celery-app</code>- for the purposes of this project, the properties of the default Django user are largely sufficient, though we'll inherit from the <code>AbstractUser</code> base class in order to customize it slightly.</p>
+<p>The <code>email</code> property is overrode to add a unique constraint to the field so that no user will be able to have the same email. Then, the <code>USERNAME_FIELD</code> is set to <code>email</code> so that will be used for logging in. <code>REQUIRED_FIELDS</code> is set to and array with <code>username</code> only- <code>email</code> is included in it in the base class and the <code>USERNAME_FIELD</code> cannot be part of this array.</p>
+<p>Finally, the <code>__str__</code> is overrode so that when an user instance is printed, the email is displayed.</p>
+<p>Add a setting to the <code>settings.py</code> file so that the custom user model is used as the authentication:</p>
+<div class="highlight"><pre><span></span><code>AUTH_USER_MODEL = &#39;accounts.DjangoCeleryAppUser&#39;
+</code></pre></div>
+
+<p>Make the migrations and migrate the database</p>
+<div class="highlight"><pre><span></span><code>(.env) $ python manage.py makemigrations
+(.env) $ python manage.py migrate
+</code></pre></div>
+
+<p>In the <code>django_celery_app/urls.py</code> file, add these entries:</p>
+<div class="highlight"><pre><span></span><code><span class="o">...</span>
+<span class="kn">from</span> <span class="nn">django.urls</span> <span class="kn">import</span> <span class="n">path</span><span class="p">,</span> <span class="n">include</span>
+
+<span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="o">...</span>
+    <span class="n">path</span><span class="p">(</span><span class="s2">&quot;accounts/&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">(</span><span class="s2">&quot;accounts.urls&quot;</span><span class="p">)),</span>
+    <span class="n">path</span><span class="p">(</span><span class="s2">&quot;accounts/&quot;</span><span class="p">,</span> <span class="n">include</span><span class="p">(</span><span class="s2">&quot;django.contrib.auth.urls&quot;</span><span class="p">)),</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>This allows any HTTP requests to <code>/accounts/*</code> to first attempt to use any custom views in the <code>accounts</code> app, then the default auth views provided by the Django <code>auth</code> app.</p>
+<p>Create a <code>urls.py</code> in the <code>accounts</code> directory and add the following content</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">django.urls</span> <span class="kn">import</span> <span class="n">path</span>
+
+<span class="kn">from</span> <span class="nn">.views</span> <span class="kn">import</span> <span class="n">SignUpView</span>
+
+<span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">path</span><span class="p">(</span><span class="s2">&quot;signup/&quot;</span><span class="p">,</span> <span class="n">SignUpView</span><span class="o">.</span><span class="n">as_view</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;signup&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p>In the <code>views.py</code> file, add the following code:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">django.urls</span> <span class="kn">import</span> <span class="n">reverse_lazy</span>
+<span class="kn">from</span> <span class="nn">django.contrib.messages.views</span> <span class="kn">import</span> <span class="n">SuccessMessageMixin</span>
+<span class="kn">from</span> <span class="nn">django.views.generic.edit</span> <span class="kn">import</span> <span class="n">CreateView</span>
+
+<span class="kn">from</span> <span class="nn">.forms</span> <span class="kn">import</span> <span class="n">DjangoCeleryAppUserCreationForm</span>
+
+
+<span class="k">class</span> <span class="nc">SignUpView</span><span class="p">(</span><span class="n">SuccessMessageMixin</span><span class="p">,</span> <span class="n">CreateView</span><span class="p">):</span>
+    <span class="n">form_class</span> <span class="o">=</span> <span class="n">DjangoCeleryAppUserCreationForm</span>
+    <span class="n">success_url</span> <span class="o">=</span> <span class="n">reverse_lazy</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">)</span>
+    <span class="n">success_message</span> <span class="o">=</span> <span class="s2">&quot;Account successfully created!&quot;</span>
+    <span class="n">template_name</span> <span class="o">=</span> <span class="s1">&#39;registration/signup.html&#39;</span>
+</code></pre></div>
+
+<p>This uses the <code>DjangoCeleryAppUserCreationForm</code> as the form class. The <code>success_url</code> determines where the user will be redirected after logging in. The <code>success_message</code> will be displayed in the form, and template used to display the form is the <code>registration/signup.html</code>.</p>
+<p>Next, create a <code>forms.py</code> file and add a <code>DjangoCeleryAppUserCreationForm</code> and the template will exist in the following <code>registration</code> folder:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">django</span> <span class="kn">import</span> <span class="n">forms</span>
+<span class="kn">from</span> <span class="nn">django.contrib.auth.forms</span> <span class="kn">import</span> <span class="n">UserCreationForm</span><span class="p">,</span> <span class="n">UserChangeForm</span>
+
+<span class="kn">from</span> <span class="nn">.models</span> <span class="kn">import</span> <span class="n">DjangoCeleryAppUser</span>
+
+
+<span class="k">class</span> <span class="nc">DjangoCeleryAppUserCreationForm</span><span class="p">(</span><span class="n">UserCreationForm</span><span class="p">):</span>
+
+    <span class="n">password1</span> <span class="o">=</span> <span class="n">forms</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Enter password&#39;</span><span class="p">,</span> 
+                                <span class="n">widget</span><span class="o">=</span><span class="n">forms</span><span class="o">.</span><span class="n">PasswordInput</span><span class="p">)</span>
+    <span class="n">password2</span> <span class="o">=</span> <span class="n">forms</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Confirm password&#39;</span><span class="p">,</span> 
+                                <span class="n">widget</span><span class="o">=</span><span class="n">forms</span><span class="o">.</span><span class="n">PasswordInput</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">DjangoCeleryAppUser</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+        <span class="n">help_texts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">DjangoCeleryAppUserChangeForm</span><span class="p">(</span><span class="n">UserChangeForm</span><span class="p">):</span>
+
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">DjangoCeleryAppUser</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Theese inherit from the <code>UserCreationForm</code> and <code>UserChangeForm</code> but accomodate the customizations in the <code>DjangoCeleryAppUser</code>. The <code>password1</code> and <code>password2</code> fields are overrode to prevent the help text from showing up under the input field. The <code>Meta</code> class's <code>model</code> property specifies the <code>DjangoCeleryAppUser</code> model be used as the model. It also adds the <code>email</code> field to the fields property so that it shows up in the form and removes the default help text that appears under the input field for the username.</p>
+<p>To use the custom <code>DjangoCeleryAppUserAdmin</code> in Django admin app, add the following in the <code>accounts/admin.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="o">...</span>
+<span class="kn">from</span> <span class="nn">django.contrib.auth.admin</span> <span class="kn">import</span> <span class="n">UserAdmin</span>
+
+<span class="kn">from</span> <span class="nn">.forms</span> <span class="kn">import</span> <span class="n">DjangoCeleryAppUserCreationForm</span><span class="p">,</span> <span class="n">DjangoCeleryAppUserChangeForm</span>
+<span class="kn">from</span> <span class="nn">.models</span> <span class="kn">import</span> <span class="n">DjangoCeleryAppUser</span>
+
+<span class="k">class</span> <span class="nc">DjangoCeleryAppUserAdmin</span><span class="p">(</span><span class="n">UserAdmin</span><span class="p">):</span>
+    <span class="n">add_form</span> <span class="o">=</span> <span class="n">DjangoCeleryAppUserCreationForm</span>
+    <span class="n">form</span> <span class="o">=</span> <span class="n">DjangoCeleryAppUserChangeForm</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">DjangoCeleryAppUser</span>
+    <span class="n">list_display</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;email&#39;</span><span class="p">,</span> <span class="s1">&#39;is_staff&#39;</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">,)</span>
+
+<span class="n">admin</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">DjangoCeleryAppUser</span><span class="p">,</span> <span class="n">DjangoCeleryAppUserAdmin</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Currently, when a user logs in, the are redirected to <code>/accounts/profile</code>, which doesn't exist in this app. Add the following to the <code>settings.py</code> file to change this to the index page:</p>
+<div class="highlight"><pre><span></span><code>LOGIN_REDIRECT_URL = &quot;home&quot;
+</code></pre></div>
+
+<p>Lastly, add this setting to the <code>settings.py</code>, so that a logout action redirects the user to the <code>login</code> view, instead of <code>/accounts/logout/</code>:</p>
+<div class="highlight"><pre><span></span><code>LOGOUT_REDIRECT_URL = &quot;login&quot;
+</code></pre></div>
+
+<p>Now that the views are defined, create a <code>templates/registration</code> directory in the base directory of the project:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="o">.</span><span class="n">env</span><span class="p">)</span> <span class="err">$</span> <span class="n">python</span> <span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">shell</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">django.conf</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">settings</span><span class="o">.</span><span class="n">BASE_DIR</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+<span class="s1">&#39;/Users/nathan.pezzotti/projects/test-django-celery-app/django_celery_app&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">os</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">BASE_DIR</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">&#39;templates&#39;</span><span class="p">))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">BASE_DIR</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">&#39;templates/registration&#39;</span><span class="p">))</span>
+</code></pre></div>
+
+<p>Create four files in this directory, which will be the templates:</p>
+<div class="highlight"><pre><span></span><code><span class="n">touch</span><span class="w"> </span><span class="o">&lt;</span><span class="n">PROJECT_ROOT</span><span class="o">&gt;/</span><span class="n">templates</span><span class="o">/</span><span class="p">{</span><span class="n">base</span><span class="p">.</span><span class="n">html</span><span class="p">,</span><span class="n">home</span><span class="p">.</span><span class="n">html</span><span class="p">}</span><span class="w"> </span><span class="o">&lt;</span><span class="n">PROJECT_ROOT</span><span class="o">&gt;/</span><span class="n">templates</span><span class="o">/</span><span class="n">registration</span><span class="o">/</span><span class="p">{</span><span class="n">login</span><span class="p">.</span><span class="n">html</span><span class="p">,</span><span class="n">signup</span><span class="p">.</span><span class="n">html</span><span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Add the following HTML to the <code>base.html</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;html&gt;</span>
+<span class="nt">&lt;head&gt;</span>
+  <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">&quot;utf-8&quot;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;title&gt;</span><span class="cp">{%</span> <span class="k">block</span> <span class="nv">title</span> <span class="cp">%}</span>Django-Celery App<span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span><span class="nt">&lt;/title&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+  <span class="nt">&lt;h1&gt;</span>Django-Celery App<span class="nt">&lt;/h1&gt;</span>
+  <span class="cp">{%</span> <span class="k">block</span> <span class="nv">content</span> <span class="cp">%}</span>
+  <span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</code></pre></div>
+
+<p>This is the base HTML from which all templates will inherit. The title will be Django-Celery App, but this can be overrode in child templates with the <code>block title</code>. The <code>block content</code> is where page content will be populated.</p>
+<p>Add the following HTML to the auth views:
+<code>registration/login.html</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">extends</span> <span class="s2">&quot;base.html&quot;</span> <span class="cp">%}</span>
+
+<span class="cp">{%</span> <span class="k">block</span> <span class="nv">title</span> <span class="cp">%}</span>Log In<span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span>
+
+<span class="cp">{%</span> <span class="k">block</span> <span class="nv">content</span> <span class="cp">%}</span>
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;account-form&quot;</span><span class="nt">&gt;</span>
+    <span class="cp">{%</span> <span class="k">if</span> <span class="nv">messages</span> <span class="cp">%}</span>
+      <span class="cp">{%</span> <span class="k">for</span> <span class="nv">message</span> <span class="k">in</span> <span class="nv">messages</span> <span class="cp">%}</span>
+      <span class="nt">&lt;p</span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">message.tags</span> <span class="cp">%}</span> <span class="na">class=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">message.tags</span> <span class="cp">}}</span><span class="s"> message&quot;</span><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="nt">&gt;</span><span class="cp">{{</span> <span class="nv">message</span> <span class="cp">}}</span><span class="nt">&lt;/p&gt;</span>
+      <span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
+    <span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
+    <span class="nt">&lt;h2&gt;</span>Log In<span class="nt">&lt;/h2&gt;</span>
+    <span class="nt">&lt;form</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
+      <span class="cp">{%</span> <span class="k">csrf_token</span> <span class="cp">%}</span>
+      <span class="cp">{{</span> <span class="nv">form.as_p</span> <span class="cp">}}</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;Log In&quot;</span><span class="nt">&gt;&lt;/input&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+    <span class="nt">&lt;p&gt;</span>Don&#39;t have an account? <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;</span><span class="cp">{%</span> <span class="k">url</span> <span class="s1">&#39;signup&#39;</span> <span class="cp">%}</span><span class="s">&quot;</span><span class="nt">&gt;</span>Sign up here.<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span>
+</code></pre></div>
+
+<p><code>registration/signup.html</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">extends</span> <span class="s2">&quot;base.html&quot;</span> <span class="cp">%}</span>
+
+<span class="cp">{%</span> <span class="k">block</span> <span class="nv">title</span> <span class="cp">%}</span>Sign Up<span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span>
+
+<span class="cp">{%</span> <span class="k">block</span> <span class="nv">content</span> <span class="cp">%}</span>
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;account-form&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;h2&gt;</span>Sign up<span class="nt">&lt;/h2&gt;</span>
+    <span class="nt">&lt;form</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
+      <span class="cp">{%</span> <span class="k">csrf_token</span> <span class="cp">%}</span>
+      <span class="cp">{{</span> <span class="nv">form.as_p</span> <span class="cp">}}</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;Sign up&quot;</span><span class="nt">&gt;&lt;/input&gt;</span>
+    <span class="nt">&lt;/form&gt;</span>
+    <span class="nt">&lt;p&gt;</span>Already have an account? <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;</span><span class="cp">{%</span> <span class="k">url</span> <span class="s1">&#39;login&#39;</span> <span class="cp">%}</span><span class="s">&quot;</span><span class="nt">&gt;</span>Log in.<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span>
+</code></pre></div>
+
+<p>The <code>login.html</code> template includes a <code>for</code> loop which checks for any messages- it will display the <code>success_message</code> defined in the <code>SignUpView</code> when a user is redirected to it upon a successful signup. </p>
+<p>For the home page, add the following HTML to the <code>home.html</code> template:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">extends</span> <span class="s2">&quot;base.html&quot;</span> <span class="cp">%}</span>
+
+<span class="cp">{%</span> <span class="k">block</span> <span class="nv">content</span> <span class="cp">%}</span>
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span><span class="nt">&gt;</span>
+<span class="cp">{%</span> <span class="k">if</span> <span class="nv">user.is_authenticated</span> <span class="cp">%}</span>
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;content&quot;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;h2&gt;</span>Hello <span class="cp">{{</span> <span class="nv">user.username</span> <span class="cp">}}</span>! Thanks for logging in.<span class="nt">&lt;/h2&gt;</span>
+  <span class="nt">&lt;p&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;</span><span class="cp">{%</span> <span class="k">url</span> <span class="s1">&#39;logout&#39;</span> <span class="cp">%}</span><span class="s">&quot;</span><span class="nt">&gt;</span>Log Out<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="cp">{%</span> <span class="k">else</span> <span class="cp">%}</span>
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;content&quot;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;h2&gt;</span>Hello! You are not logged in.<span class="nt">&lt;/h2&gt;</span>
+  <span class="nt">&lt;p&gt;</span>Please <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;</span><span class="cp">{%</span> <span class="k">url</span> <span class="s1">&#39;login&#39;</span> <span class="cp">%}</span><span class="s">&quot;</span><span class="nt">&gt;</span>log in<span class="nt">&lt;/a&gt;</span>  in or <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;</span><span class="cp">{%</span> <span class="k">url</span> <span class="s1">&#39;signup&#39;</span> <span class="cp">%}</span><span class="s">&quot;</span><span class="nt">&gt;</span>sign up<span class="nt">&lt;/a&gt;</span> if you do not have an account.<span class="nt">&lt;/p&gt;</span> 
+<span class="nt">&lt;/div&gt;</span>
+<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="cp">{%</span> <span class="k">endblock</span> <span class="cp">%}</span>
+</code></pre></div>
+
+<p>This extends from the <code>base.html</code>, and overrides the <code>content</code> with An <code>if</code> statement checks to see if the user is authenticated and if so, displays a welcome message. Otherwise, they are prompted to log in or sign up.</p>
+<p>In the <code>django_celery_app/urls.py</code> file, add an entry for this view:</p>
+<div class="highlight"><pre><span></span><code><span class="o">...</span>
+<span class="kn">from</span> <span class="nn">django.views.generic.base</span> <span class="kn">import</span> <span class="n">TemplateView</span>
+
+<span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">path</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">TemplateView</span><span class="o">.</span><span class="n">as_view</span><span class="p">(</span><span class="n">template_name</span><span class="o">=</span><span class="s2">&quot;home.html&quot;</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;home&quot;</span><span class="p">),</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<p>To instruct Djano to look in the root <code>templates</code> folder for templates, modify the <code>TEMPLATES</code> setting in the <code>settings.py</code> file:</p>
+<div class="highlight"><pre><span></span><code>TEMPLATES = [
+    {
+        ...
+        &quot;DIRS&quot;: [
+            BASE_DIR / &#39;templates&#39;
+        ],
+        ...
+</code></pre></div>
+
+<p>Lastly, create a <code>static</code> folder in the root folder of the project and add the content in the <code>styles.css</code> in the linked Github project and modify the <code>base.html</code> to include it as a stylesheet:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;head&gt;</span>
+  ...
+  <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;{% static &#39;styles.css&#39; %}&quot;</span> <span class="na">type=</span><span class="s">&#39;text/css&#39;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/head&gt;</span>
+</code></pre></div>
+
+<p>In order to load styles, the following needs to be added to the top of the <code>base.html</code> as well:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="o">%</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="o">%</span><span class="p">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>Add the root <code>static</code> folder to the list of static files Django will search:</p>
+<div class="highlight"><pre><span></span><code>STATICFILES_DIRS = (
+    BASE_DIR / &#39;static&#39;,
+)
+</code></pre></div>
+
+<h2>Install Celery</h2>
+<p>Install Celery with the dependencies for Redis:</p>
+<div class="highlight"><pre><span></span><code><span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="ss">&quot;celery[redis]&quot;</span><span class="w"></span>
+</code></pre></div>
+
+<p>Create a <code>celery.py</code> in the management app folder (<code>django_celery_app</code>) with the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">celery</span> <span class="kn">import</span> <span class="n">Celery</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;DJANGO_SETTINGS_MODULE&quot;</span><span class="p">,</span> <span class="s2">&quot;django_celery_app.settings&quot;</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">Celery</span><span class="p">(</span><span class="s2">&quot;django_celery_app&quot;</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">config_from_object</span><span class="p">(</span><span class="s2">&quot;django.conf:settings&quot;</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;CELERY&quot;</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">autodiscover_tasks</span><span class="p">()</span>
+</code></pre></div>
+
+<p>The <code>DJANGO_SETTINGS_MODULE</code> environment variable is set so that the Celery CLI (used later) can find the Django settings. <code>app</code> is an instance of Celery. <code>config_from_object</code> makes the app get its configuration through the Django settings, specifically those keys beginning with <code>CELERY_</code>. <code>app.autodiscover_tasks()</code> will look in each installed app for Celery tasks.</p>
+<p>In the <code>django_celery_app/__init__.py</code>, add the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">.celery</span> <span class="kn">import</span> <span class="n">app</span> <span class="k">as</span> <span class="n">celery_app</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;celery_app&#39;</span><span class="p">,)</span>
+</code></pre></div>
+
+<p>This is required so that the app is loaded when Django starts and is available for reference by the <code>@shared_task</code> decorator </p>
+<p>In the <code>settings.py</code> file, add the following settings to point to the where Redis is running as a broker and backend:</p>
+<div class="highlight"><pre><span></span><code><span class="n">CELERY_BROKER_URL</span> <span class="o">=</span> <span class="s">&quot;redis://127.0.0.1:6379/0&quot;</span>
+<span class="n">CELERY_RESULT_BACKEND</span> <span class="o">=</span> <span class="s">&quot;redis://127.0.0.1:6379/0&quot;</span>
+</code></pre></div>
+
+<p>For development purposes, you can run Redis in a container with a port mapping:</p>
+<div class="highlight"><pre><span></span><code>docker run -p 6379:6379 -d redis
+</code></pre></div>
+
+<p>Next, to create a task which send a new user a welcome email, creat an <code>accounts/tasks.py</code> file:</p>
+<div class="highlight"><pre><span></span><code>touch accounts/tasks.py
+</code></pre></div>
+
+<p>Add the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+
+<span class="kn">from</span> <span class="nn">celery</span> <span class="kn">import</span> <span class="n">shared_task</span>
+<span class="kn">from</span> <span class="nn">django.core.mail</span> <span class="kn">import</span> <span class="n">send_mail</span>
+
+
+<span class="nd">@shared_task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;send_welcome_email&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">send_welcome_email_task</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sends a welcome email to a user when they sign up.&quot;&quot;&quot;</span>
+    <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">send_mail</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Welcome </span><span class="si">{</span><span class="n">username</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Hi </span><span class="si">{</span><span class="n">username</span><span class="si">}</span><span class="s2">,</span><span class="se">\n\n</span><span class="s2">Thank you for signing up for our site!</span><span class="se">\n</span><span class="s2">This email was sent by a celery worker with process ID </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noreply@example.com&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="n">email</span><span class="p">],</span>
+        <span class="n">fail_silently</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>This defines a <code>shared_task</code> named <code>send_welcome_email</code>. A <code>@shared_task</code> decorator allows for defining tasks without depending on the project-level Celery app, as tasks created outside of a Django project usually reference an app instance directly through <code>@app.task</code>. This task takes the username of the new user and the email content as arguments with which it will create the email. The The <code>sleep(5)</code> is used to make the function take some time to run, as might be the case in a real-world situation. The Django <code>send_email</code> function is used to send the email,.</p>
+<p>So the email is printed to the console, rather than sent through an SMTP mail server, add the following setting in the <code>settings.py</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">EMAIL_BACKEND</span> <span class="o">=</span> <span class="s">&quot;django.core.mail.backends.console.EmailBackend&quot;</span>
+</code></pre></div>
+
+<p>In the <code>accounts/forms.py</code> file, add the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="o">...</span>
+<span class="kn">from</span> <span class="nn">.tasks</span> <span class="kn">import</span> <span class="n">send_welcome_email_task</span>
+
+
+<span class="k">class</span> <span class="nc">DjangoCeleryAppUserCreationForm</span><span class="p">(</span><span class="n">UserCreationForm</span><span class="p">):</span>
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">send_email</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">send_welcome_email_task</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cleaned_data</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleaned_data</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<p>This adds a method to the <code>DjangoCeleryAppUserCreationForm</code> which invokes the <code>shared_task</code>, <code>send_welcome_email_task</code> using the Celery <code>delay</code> method, to execute the task asyncronously
+.
+In the <code>accounts/views.py</code> file, add the following function:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="n">SignUpView</span>(<span class="n">SuccessMessageMixin</span>, <span class="n">CreateView</span>):
+    ...
+
+    <span class="n">def</span> <span class="n">form_valid</span>(<span class="nb">self</span>, <span class="n">form</span>):
+        <span class="n">form</span>.<span class="n">send_email</span>()
+        <span class="k">return</span> <span class="n">super</span>().<span class="n">form_valid</span>(<span class="n">form</span>)
+</code></pre></div>
+
+<p>This overrides the <code>form_valid</code> function to call the <code>send_email</code> function in the form when a new user successfully signs up.</p>
+<h2>Start the application:</h2>
+<p>In a separate terminal, start the virtual environment with <code>source .env/bin/activate</code> and change into the project directory.</p>
+<p>Start Celery:</p>
+<div class="highlight"><pre><span></span><code>(.env) $ python -m celery -A django_celery_app worker
+</code></pre></div>
+
+<p>This command starts a Celery worker with the <code>worker</code> command, which will process the tasks.</p>
+<p>Start the Django server:</p>
+<div class="highlight"><pre><span></span><code>(.env) $ python manage.py runserver
+</code></pre></div>
+
+<p>Access <code>http://localhost:8000/accounts/signup</code> and create an account- after about 5 seconds, a welcome email should be printed to the console by the Celery worker.</p>
+<p>The full source code can be found <a href="https://github.com/npezzotti/django-celery-app">here</a></p>
+  </div><!-- /.entry-content -->
+  </br>
+  <div>
+      Category: <a class="text-reset" href="./category/python.html">python</a>
+  </div>
+  <div class="tags">
+      Tags:
+          <a class="text-reset" href="./tag/python.html">#python</a>
+          <a class="text-reset" href="./tag/devops.html">#devops</a>
+  </div>
+</section>
+  </div>
+  <footer class="d-flex mt-auto justify-content-center align-items-center py-3 my-5 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+        <span class="text-muted">&copy; 2022 Nathan Pezzotti</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+        <li><a class="text-muted" href="https://github.com/npezzotti"><i class="bi bi-github" style="font-size: 1.5rem"></i></a></li>
+    </ul>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>
