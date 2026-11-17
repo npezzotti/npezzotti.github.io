@@ -41,7 +41,6 @@ document.querySelectorAll('.fade-in').forEach(el => {
 });
 
 // Interactive particles in the hero section
-
 const particleStyle = `
   position: absolute;
   width: 4px;
